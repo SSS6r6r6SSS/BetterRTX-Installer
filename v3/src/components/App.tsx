@@ -1,39 +1,69 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import { PresetCard } from "./PresetCard";
+import { listen } from "@tauri-apps/api/event";
+
 import { InstallationCard } from "./InstallationCard";
 import { StatusBarContainer } from "./StatusBar";
 import { ConsolePanel } from "./ConsolePanel";
+import { RtpackDialog } from "./RtpackDialog";
 import { useAppStore } from "../store/appStore";
 import { useStatusStore } from "../store/statusStore";
 import AppHeader from "./AppHeader";
+import ActionsTab from "./ActionsTab";
+import PresetsTab from "./PresetsTab";
 
 export const App: React.FC = () => {
   const { t } = useTranslation();
   const { addMessage } = useStatusStore();
+  const [rtpackDialogOpen, setRtpackDialogOpen] = useState(false);
+  const [rtpackPath, setRtpackPath] = useState("");
   const {
     installations,
-    presets,
     selectedInstallations,
-    selectedPreset,
     consoleOutput,
     activeTab,
     setSelectedInstallations,
-    setSelectedPreset,
     addConsoleOutput,
     clearConsole,
     refreshInstallations,
     refreshPresets,
-    installRTX,
-    installMaterials,
-    backupSupportFiles,
   } = useAppStore();
 
   useEffect(() => {
     refreshInstallations();
     refreshPresets();
   }, [refreshInstallations, refreshPresets]);
+
+  // Listen for rtpack file open events
+  useEffect(() => {
+    const unlisten = listen<string>("rtpack-file-opened", (event) => {
+      setRtpackPath(event.payload);
+      setRtpackDialogOpen(true);
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  // Handle file drops
+  useEffect(() => {
+    const unlisten = listen<string[]>("tauri://file-drop", (event) => {
+      const paths = event.payload;
+      for (const path of paths) {
+        if (path.toLowerCase().endsWith(".rtpack")) {
+          setRtpackPath(path);
+          setRtpackDialogOpen(true);
+          break; // Only handle the first .rtpack file
+        }
+      }
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   const handleInstallationSelection = (path: string, selected: boolean) => {
     const newSet = new Set(selectedInstallations);
@@ -45,40 +75,6 @@ export const App: React.FC = () => {
     setSelectedInstallations(newSet);
   };
 
-  const handlePresetSelection = (uuid: string, selected: boolean) => {
-    setSelectedPreset(selected ? uuid : null);
-  };
-
-  const handlePresetInstall = async (uuid: string) => {
-    if (selectedInstallations.size === 0) {
-      addMessage({
-        message: t("status_select_installation_warning"),
-        type: "error",
-      });
-      return;
-    }
-
-    try {
-      addMessage({ message: t("status_installing_preset"), type: "loading" });
-      addConsoleOutput(
-        t("log_installing_preset", { uuid, count: selectedInstallations.size })
-      );
-
-      for (const installPath of selectedInstallations) {
-        await invoke("download_and_install_pack", { uuid, selectedNames: [installPath] });
-        addConsoleOutput(t("log_installed_to", { installPath }));
-      }
-
-      addMessage({ message: t("status_install_success"), type: "success" });
-      addConsoleOutput(t("log_install_complete"));
-      // Refresh installations to show updated preset info
-      await refreshInstallations();
-    } catch (error) {
-      const errorMsg = t("status_install_error", { error });
-      addMessage({ message: errorMsg, type: "error" });
-      addConsoleOutput(errorMsg);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-app-bg text-app-fg">
@@ -105,7 +101,7 @@ export const App: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <div className="installations-list grid gap-4 grid-cols-2">
+              <div className="installations-list grid gap-4 sm:grid-cols-2">
                 {installations.length > 0 ? (
                   installations.map((installation) => (
                     <InstallationCard
@@ -127,90 +123,11 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === "presets" && (
-            <section className="presets-container">
-              <div className="section-toolbar flex justify-between items-center mb-4">
-                <div className="toolbar-title">
-                  <h2 className="text-lg font-semibold">
-                    {t("presets_title")}
-                  </h2>
-                  <span className="text-sm opacity-75">
-                    {t("presets_loaded_count", { count: presets.length })}
-                  </span>
-                </div>
-              </div>
-              <div className="presets-list grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {presets.length > 0 ? (
-                  presets.map((preset) => (
-                    <PresetCard
-                      key={preset.uuid}
-                      preset={preset}
-                      selected={selectedPreset === preset.uuid}
-                      onSelectionChange={handlePresetSelection}
-                      onInstall={handlePresetInstall}
-                    />
-                  ))
-                ) : (
-                  <div className="empty-state text-center py-8 col-span-full">
-                    <p>{t("presets_none_available")}</p>
-                  </div>
-                )}
-              </div>
-            </section>
+            <PresetsTab />
           )}
 
           {activeTab === "actions" && (
-            <section className="actions-container">
-              <div className="section-toolbar mb-4">
-                <h2 className="text-lg font-semibold">{t("actions_title")}</h2>
-              </div>
-              <div className="actions-grid grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <button
-                  className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border"
-                  onClick={() => {
-                    for (const installPath of selectedInstallations) {
-                      installRTX(installPath);
-                    }
-                  }}
-                >
-                  <h3 className="font-semibold mb-2">
-                    {t("action_install_rtpack_title")}
-                  </h3>
-                  <p className="text-sm opacity-75">
-                    {t("action_install_rtpack_desc")}
-                  </p>
-                </button>
-                <button
-                  className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border"
-                  onClick={() => {
-                    for (const installPath of selectedInstallations) {
-                      installMaterials(installPath);
-                    }
-                  }}
-                >
-                  <h3 className="font-semibold mb-2">
-                    {t("action_install_materials_title")}
-                  </h3>
-                  <p className="text-sm opacity-75">
-                    {t("action_install_materials_desc")}
-                  </p>
-                </button>
-                <button
-                  className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border"
-                  onClick={() => {
-                    for (const installPath of selectedInstallations) {
-                      backupSupportFiles(installPath);
-                    }
-                  }}
-                >
-                  <h3 className="font-semibold mb-2">
-                    {t("action_backup_title")}
-                  </h3>
-                  <p className="text-sm opacity-75">
-                    {t("action_backup_desc")}
-                  </p>
-                </button>
-              </div>
-            </section>
+            <ActionsTab />
           )}
         </div>
       </main>
@@ -219,6 +136,13 @@ export const App: React.FC = () => {
       <div className="fixed bottom-0 left-0 right-0 z-50">
         <ConsolePanel output={consoleOutput} onClear={clearConsole} />
       </div>
+
+      {/* RTpack Dialog */}
+      <RtpackDialog
+        isOpen={rtpackDialogOpen}
+        rtpackPath={rtpackPath}
+        onClose={() => setRtpackDialogOpen(false)}
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from "react";
 import { cx } from "classix";
 import PresetIcon from "./PresetIcon";
+import Switch from "./ui/Switch";
 
 export interface Installation {
   FriendlyName: string;
@@ -24,12 +25,11 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
   selected = false,
   onSelectionChange,
 }) => {
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isSelected = e.target.checked;
+  const handleSwitchChange = (isSelected: boolean) => {
     onSelectionChange?.(installation.InstallLocation, isSelected);
   };
 
-  const checkboxId = `install-${installation.InstallLocation.replace(
+  const switchId = `install-${installation.InstallLocation.replace(
     /[^a-zA-Z0-9]/g,
     ""
   )}`;
@@ -39,7 +39,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
   ) : null;
 
   return (
-    <label
+    <div
       className={cx(
         "installation-card rounded-lg border p-4 transition-all duration-200",
         selected
@@ -48,7 +48,6 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
         installation.Preview ? "preview order-2" : ""
       )}
       data-path={installation.InstallLocation}
-      htmlFor={checkboxId}
     >
       <div className="installation-header flex justify-between items-center mb-2">
         <div className="installation-title flex items-center gap-2">
@@ -76,19 +75,14 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
         </p>
       )}
 
-      <div className="installation-actions flex items-center gap-2 mt-3">
-        <input
-          type="checkbox"
-          id={checkboxId}
-          className="installation-checkbox w-4 h-4"
-          value={installation.InstallLocation}
+      <div className="installation-actions mt-3">
+        <Switch
+          id={switchId}
           checked={selected}
-          onChange={handleCheckboxChange}
+          onCheckedChange={handleSwitchChange}
+          label="Select for installation"
         />
-        <span className="checkbox-label text-sm cursor-pointer select-none text-app-fg">
-          Select for installation
-        </span>
       </div>
-    </label>
+    </div>
   );
 };

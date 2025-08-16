@@ -10,6 +10,7 @@ use walkdir::WalkDir;
 use winreg::enums::*;
 use winreg::RegKey;
 use std::collections::HashMap;
+use tauri::Emitter;
 
 const BRTX_DIR_NAME: &str = "graphics.bedrock";
 
@@ -1009,6 +1010,14 @@ fn set_iobit_path(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn handle_file_drop(_paths: Vec<String>) -> Result<(), String> {
+    // This command will be called from the frontend when files are dropped
+    // The frontend will handle the actual file drop event and call this command
+    // We don't need to do anything here as the frontend handles the logic
+    Ok(())
+}
+
+#[tauri::command]
 fn uninstall_package(restore_initial: bool) -> Result<(), String> {
     if restore_initial {
         let all = list_installations()?;
@@ -1050,6 +1059,18 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            // Handle command line arguments for file associations
+            let args: Vec<String> = std::env::args().collect();
+            if args.len() > 1 {
+                let file_path = &args[1];
+                if file_path.to_lowercase().ends_with(".rtpack") && std::path::Path::new(file_path).exists() {
+                    let _ = app.emit("rtpack-file-opened", file_path);
+                }
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             list_installations,
             get_api_packs,
@@ -1063,6 +1084,7 @@ pub fn run() {
             register_rtpack_extension,
             check_iobit_unlocker,
             set_iobit_path,
+            handle_file_drop,
             uninstall_package,
             clear_cache,
             get_cache_info,

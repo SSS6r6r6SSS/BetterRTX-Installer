@@ -26,5 +26,18 @@
   "action_install_materials_title": "Install Material Files",
   "action_install_materials_desc": "Install individual material files",
   "action_backup_title": "Backup Selected",
-  "action_backup_desc": "Create backups of selected installations"
+  "action_backup_desc": "Create backups of selected installations",
+  "action_install_dlss_title": "Install DLSS",
+  "action_install_dlss_desc": "Install NVIDIA DLSS for enhanced performance",
+  "rtpack_dialog_title": "Install RTpack File",
+  "rtpack_dialog_description": "Select which Minecraft instances to install this RTpack file to:",
+  "select_minecraft_instances": "Select Minecraft Instances",
+  "select_all": "Select All",
+  "deselect_all": "Deselect All",
+  "no_minecraft_installations": "No Minecraft installations found",
+  "preview": "Preview",
+  "cancel": "Cancel",
+  "install": "Install",
+  "installing": "Installing...",
+  "status_installing_rtpack": "Installing RTpack file..."
 }

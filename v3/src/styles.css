@@ -1,5 +1,86 @@
 @import "tailwindcss";
-@import "./theme.css";
+@import "./styles/theme.css";
+@import "./styles/ui.css";
+
+@keyframes rainbow-cycle {
+  0% {
+    fill: oklch(0.901 0.058 230.902);
+    border-color: oklch(0.951 0.026 236.824);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.5),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  10% {
+    fill: oklch(0.882 0.059 254.128);
+    border-color: oklch(0.932 0.032 255.585);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.75),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  20% {
+    fill: oklch(0.894 0.057 293.283);
+    border-color: oklch(0.943 0.029 294.588);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.85),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  30% {
+    fill: oklch(0.892 0.058 10.001);
+    border-color: oklch(0.941 0.03 12.58);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.75),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  40% {
+    fill: oklch(0.885 0.062 18.334);
+    border-color: oklch(0.936 0.032 17.717);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.65),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    fill: oklch(0.901 0.076 70.697);
+    border-color: oklch(0.954 0.038 75.164);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.75),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  60% {
+    fill: oklch(0.924 0.12 95.746);
+    border-color: oklch(0.962 0.059 95.617);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.5),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  70% {
+    fill: oklch(0.945 0.129 101.54);
+    border-color: oklch(0.973 0.071 103.193);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.65),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+  80% {
+    fill: oklch(0.938 0.127 124.321);
+    border-color: oklch(0.967 0.067 122.328);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.85),
+      0 2px 4px -2px rgba(0, 0, 0, 0.85);
+  }
+  90% {
+    fill: oklch(0.905 0.093 164.15);
+    border-color: oklch(0.95 0.052 163.051);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.75),
+      0 2px 4px -2px rgba(0, 0, 0, 0.75);
+  }
+  100% {
+    fill: oklch(0.917 0.08 205.041);
+    border-color: oklch(0.956 0.045 203.388);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.5),
+      0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  }
+}
 
 /* Custom utilities - must be at top level, not nested in @layer */
 @utility panel { @apply rounded-lg border shadow-sm bg-app-panel border-app-border; }
@@ -8,33 +89,11 @@
 @utility panel__body { @apply p-4; }
 
 @utility button {
-  @apply inline-flex items-center justify-center gap-2 rounded-md border-2 px-4 py-2 text-sm font-medium transition-all select-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer;
-  @apply text-app-fg border-app-border bg-app-panel/95;
-  box-shadow: 0 3px 0 0 color-mix(in oklab, var(--color-app-border) 80%, black 20%);
-  transform: translateY(0);
-  &:hover { 
-    @apply bg-app-panel/90;
-    transform: translateY(1px);
-    box-shadow: 0 2px 0 0 color-mix(in oklab, var(--color-app-border) 80%, black 20%);
-  }
-  &:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-app-border) 80%, black 20%);
-  }
+  @apply btn;
 }
 
 @utility button--primary {
-  @apply text-white bg-brand-accent-600 border-brand-accent;
-  box-shadow: 0 3px 0 0 color-mix(in oklab, var(--color-brand-accent-600) 80%, black 20%);
-  &:hover { 
-    @apply bg-brand-accent;
-    transform: translateY(1px);
-    box-shadow: 0 2px 0 0 color-mix(in oklab, var(--color-brand-accent-600) 80%, black 20%);
-  }
-  &:active {
-    transform: translateY(3px);
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand-accent-600) 80%, black 20%);
-  }
+  @apply btn;
 }
 
 @utility button--ghost { 
@@ -78,7 +137,7 @@
   }
 
   body {
-    @apply antialiased font-sans bg-app-bg text-app-fg;
+    @apply antialiased font-sans bg-app-bg text-app-fg scrollbar;
   }
 
 }
@@ -129,7 +188,6 @@
 
   .nav__link--active {
     @apply border-brand-accent bg-brand-accent/20;
-    outline: 2px solid color-mix(in oklab, var(--color-brand-accent) 35%, transparent);
   }
 
   /* Panels / cards - utilities moved to top level */
@@ -222,7 +280,7 @@
   .installation-title { @apply flex items-center gap-2; }
   .installation-title h3 { @apply text-sm font-semibold; }
   .installation-checkbox { @apply cursor-pointer accent-brand-accent bg-minecraft-slate-500 border-minecraft-slate-800 appearance-none rounded-xs; }
-  .preset-icon { @apply size-6 rounded-sm object-cover; }
+  .preset-icon { @apply size-6 sm:size-12 rounded-sm object-cover; }
   .preview-badge { @apply badge bg-brand-accent-600 text-white; border-color: color-mix(in oklab, var(--color-brand-accent-600) 70%, black 30%); }
   .installation-path { @apply px-4 pt-2 text-xs text-app-muted break-all font-mono select-all; }
   .installed-preset-info, .no-preset-info { @apply px-4 text-xs; }
@@ -231,10 +289,35 @@
   .checkbox-label { @apply text-xs text-app-muted; }
 
   /* Presets */
-  .presets-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
-  .preset-card { @apply panel hover-lift cursor-pointer; }
-  .preset-card.selected { @apply border-brand-accent; outline: 2px solid color-mix(in oklab, var(--color-brand-accent) 35%, transparent); }
+  .presets-grid { @apply flex flex-col max-w-full gap-4; }
+  .presets-list {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  .preset-card {
+    @apply panel flex flex-col cursor-pointer contain-layout transition-all duration-200 rounded-lg border p-4 hover:shadow-lg;
+  }
+
+  .preset-card.selected { @apply border-brand-accent; }
   .preset-header { @apply flex items-center gap-3 border-b px-4 py-3 border-app-border; }
+  .preset-link { @apply hover:underline cursor-pointer; }
+  .preset-stub-container {
+    @apply w-full overflow-hidden relative max-w-full h-10;
+    scrollbar-gutter: stable;
+  }
+  .preset-stub-container:hover {
+    @apply overflow-x-auto;
+  }
+  .preset-stub-link { 
+    @apply hover:underline cursor-pointer font-mono text-xs whitespace-nowrap block transition-all duration-200;
+  }
+  .preset-stub-container:not(:hover) .preset-stub-link {
+    @apply overflow-hidden max-w-full text-ellipsis;
+  }
+
+  .preset-details {
+    @apply flex flex-col gap-3;
+  }
+
   .install-preset-btn { @apply m-4 button button--primary; }
 
   /* Empty state */
@@ -293,7 +376,7 @@
   }
 
   .console-panel--expanded { @apply max-h-80; }
-  .console-panel--collapsed { @apply max-h-0; }
+  .console-panel--collapsed { @apply max-h-0 rounded-b-xl; }
 
   body:has(.console-panel--expanded) {
     @apply overflow-hidden h-screen;
@@ -301,5 +384,78 @@
 
   body:has(.console-panel--expanded) .status-alert {
     @apply bottom-80;
+  }
+
+  /* Switch Component */
+  .switch {
+    @apply grid grid-flow-row grid-cols-3;
+  }
+
+  .switch:hover .switch__track .switch__button {
+    @apply rounded-md bg-minecraft-slate-300/50;
+  }
+
+  .switch:hover .switch__track[data-checked] .switch__button {
+    @apply bg-minecraft-slate-200;
+  }
+
+  .switch:hover .switch__handle {
+    @apply border-x-minecraft-slate-700 border-b-minecraft-slate-800;
+  }
+
+  .switch:hover .switch__track[data-checked] {
+    @apply border-minecraft-green-100 bg-minecraft-green-200;
+  }
+
+  .switch__label {
+    @apply cursor-pointer select-none text-lg font-medium text-minecraft-slate-100 col-span-2;
+  }
+
+  .switch__description {
+    @apply cursor-default select-none text-sm text-minecraft-slate-300 col-span-2;
+  }
+
+  .switch__handle {
+    @apply -mt-2 flex size-12 -translate-x-1 items-stretch rounded-md border border-b-4 border-minecraft-slate-400 border-b-minecraft-slate-600 bg-minecraft-slate-200 shadow-md outline-1 outline-minecraft-slate-900/50 transition duration-300 ease-out group-data-checked:translate-x-12 cursor-pointer;
+  }
+
+  .switch:hover .switch__handle {
+    @apply border-x-minecraft-slate-700 border-b-minecraft-slate-800 cursor-pointer;
+  }
+
+  .switch__button {
+    @apply h-full w-full rounded-sm border-2 border-minecraft-slate-50/75 pt-4 transition duration-200 ease-out cursor-pointer;
+  }
+
+  .switch:hover .switch__track .switch__button {
+    @apply rounded-md bg-minecraft-slate-300/50;
+  }
+
+  .switch:hover .switch__track[data-checked] .switch__button {
+    @apply bg-minecraft-slate-200;
+  }
+
+  .switch__track {
+    @apply relative row-span-2 mt-2 inline-flex h-10 w-24 items-center place-self-center justify-self-end rounded-sm border-2 border-minecraft-slate-900/60 bg-minecraft-slate-300 shadow-xs outline-1 outline-black/50 transition data-checked:border-minecraft-green-200 data-checked:bg-minecraft-green-300 cursor-pointer;
+  }
+
+  .switch:hover .switch__track .switch__button {
+    @apply rounded-md bg-minecraft-slate-300/50;
+  }
+
+  .switch:hover .switch__track[data-checked] .switch__button {
+    @apply bg-minecraft-slate-200;
+  }
+
+  .switch:hover .switch__track[data-checked] {
+    @apply border-minecraft-green-100 bg-minecraft-green-200;
+  }
+
+  .switch__track-background {
+    @apply absolute flex h-full w-1/2 select-none items-center justify-center text-white/75 opacity-0 transition-opacity group-data-checked:opacity-100;
+  }
+
+  .switch__track-background + .switch__track-background {
+    @apply right-0 rounded-r border-2 border-l-0 border-minecraft-slate-200/30 text-minecraft-slate-900/50 opacity-100 group-data-checked:opacity-0;
   }
 }

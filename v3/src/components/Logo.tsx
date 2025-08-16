@@ -3,7 +3,7 @@ const Logo = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
         className={cx(
             "hover:animate-rainbow",
-            "group h-full w-32 max-w-52 overflow-hidden rounded-xs border border-transparent fill-yellow-300 shadow-2xs transition-all duration-200 ease-in active:shadow-lg sm:min-w-48 md:rounded-md xl:w-72 xl:max-w-64"
+            "group h-full w-32 max-w-52 overflow-hidden rounded-xs border border-transparent fill-yellow-300 shadow-2xs transition-all duration-200 ease-in active:shadow-lg"
         )}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 975.14 191.5"
