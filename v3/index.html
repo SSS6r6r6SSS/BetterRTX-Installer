@@ -22,12 +22,8 @@
         </nav>
       </div>
       <div class="toolbar-right">
-        <button id="settings-btn" class="toolbar-icon-btn" popovertarget="settings-popover" aria-label="Settings">
-          <span class="icon">⚙</span>
-        </button>
-        <button id="help-btn" class="toolbar-icon-btn" popovertarget="help-popover" aria-label="Help">
-          <span class="icon">?</span>
-        </button>
+        <!-- Toolbar component will be inserted here -->
+        <toolbar-section id="main-toolbar"></toolbar-section>
       </div>
     </header>
 
@@ -134,15 +130,16 @@
             </div>
             <div class="toolbar-actions">
               <button id="refresh-installations" class="toolbar-btn">
-                <span class="btn-icon">⟳</span>
+                <span class="btn-icon" data-lucide="refresh-cw"></span>
                 Refresh
               </button>
               <button id="show-actions" class="toolbar-btn mobile-only">
-                <span class="btn-icon">⚙</span>
+                <span class="btn-icon" data-lucide="settings"></span>
                 Actions
               </button>
             </div>
           </div>
+          <!-- Installation cards will be inserted here -->
           <div id="installations-list" class="installations-grid"></div>
         </section>
 
@@ -154,23 +151,24 @@
             </div>
             <div class="toolbar-actions">
               <button id="refresh-presets" class="toolbar-btn">
-                <span class="btn-icon">⟳</span>
+                <span class="btn-icon" data-lucide="refresh-cw"></span>
                 Refresh
               </button>
               <button id="force-refresh-presets" class="toolbar-btn">
-                <span class="btn-icon">🔄</span>
+                <span class="btn-icon" data-lucide="refresh-ccw"></span>
                 Force Refresh
               </button>
               <button id="clear-cache" class="toolbar-btn">
-                <span class="btn-icon">🗑</span>
+                <span class="btn-icon" data-lucide="trash-2"></span>
                 Clear Cache
               </button>
               <button id="show-cache-info" class="toolbar-btn">
-                <span class="btn-icon">ℹ</span>
+                <span class="btn-icon" data-lucide="info"></span>
                 Cache Info
               </button>
             </div>
           </div>
+          <!-- Preset cards will be inserted here -->
           <div id="presets-list" class="presets-grid"></div>
         </section>
 
@@ -195,23 +193,11 @@
           </div>
         </section>
 
-        <section id="status-section">
-          <div id="status" class="status"></div>
-          <div id="progress-container" class="progress-container" style="display: none;">
-            <div id="progress-bar" class="progress-bar"></div>
-          </div>
-        </section>
+        <!-- Status bar component -->
+        <status-bar id="status-bar"></status-bar>
 
-        <section id="console-section">
-          <div class="console-header" id="console-toggle">
-            <h3>Console Output</h3>
-            <span id="console-arrow" class="console-arrow">▼</span>
-          </div>
-          <div id="console-panel" class="console-panel collapsed">
-            <div id="console-output" class="console-output"></div>
-            <button id="clear-console" class="console-clear-btn">Clear</button>
-          </div>
-        </section>
+        <!-- Console panel component -->
+        <console-panel id="console-panel"></console-panel>
       </main>
     </div>
   </body>

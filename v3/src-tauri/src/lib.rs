@@ -192,58 +192,71 @@ fn iobit_delete(iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<
         "RTXPostFX.Bloom.material.bin"
     ];
     
-    // Attempt to delete RTX material files first (unconditional)
+    // Collect all files to delete (RTX files + materials), avoiding duplicates
+    let mut files_to_delete = std::collections::HashSet::new();
+    
+    // Add hardcoded RTX files
     for file_name in &rtx_files_to_delete {
-        let target = location.join("data").join("renderer").join("materials").join(file_name);
-        println!("Attempting to delete RTX file via IObit: {}", target.display());
-        // Use PowerShell to mirror quoting behavior of v2
-        let arglist = format!("/Delete \"{}\"", target.display());
-        let ioexe_ps = iobit.display().to_string().replace("'", "''");
-        let arglist_ps = arglist.replace("'", "''");
-        let ps_cmd = format!(
-            "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
-            ioexe_ps, arglist_ps
-        );
-        let output = Command::new("powershell.exe")
-            .arg("-NoProfile")
-            .arg("-ExecutionPolicy").arg("Bypass")
-            .arg("-Command")
-            .arg(ps_cmd)
-            .output()
-            .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            println!("IObit delete reported non-success for {}: {}", target.display(), stderr);
-        }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        files_to_delete.insert(file_name.to_string());
     }
     
-    // Also delete any files that match the materials we're about to install (unconditional)
+    // Add material files being installed
     for m in materials {
-        let name = m.file_name().ok_or("invalid material filename")?;
-        let target = location.join("data").join("renderer").join("materials").join(name);
-        println!("Attempting to delete material via IObit: {}", target.display());
-        // Use PowerShell to mirror quoting behavior of v2
-        let arglist = format!("/Delete \"{}\"", target.display());
-        let ioexe_ps = iobit.display().to_string().replace("'", "''");
-        let arglist_ps = arglist.replace("'", "''");
-        let ps_cmd = format!(
-            "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
-            ioexe_ps, arglist_ps
-        );
-        let output = Command::new("powershell.exe")
-            .arg("-NoProfile")
-            .arg("-ExecutionPolicy").arg("Bypass")
-            .arg("-Command")
-            .arg(ps_cmd)
-            .output()
-            .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            println!("IObit delete reported non-success for {}: {}", target.display(), stderr);
+        if let Some(name) = m.file_name() {
+            if let Some(name_str) = name.to_str() {
+                files_to_delete.insert(name_str.to_string());
+            }
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
     }
+    
+    if files_to_delete.is_empty() {
+        println!("No files to delete");
+        return Ok(());
+    }
+
+    // Build target paths for all files to delete
+    let targets: Vec<_> = files_to_delete
+        .iter()
+        .map(|file_name| location.join("data").join("renderer").join("materials").join(file_name))
+        .collect();
+
+    // Build the exact ArgumentList string for single-pass delete:
+    // '/Delete "target1","target2","target3"'
+    let targets_joined = targets
+        .iter()
+        .map(|t| t.display().to_string())
+        .collect::<Vec<_>>()
+        .join("\",\"");
+    let arglist = format!("/Delete \"{}\"", targets_joined);
+
+    // Escape single quotes for embedding in a single-quoted PS string
+    let ioexe_ps = iobit.display().to_string().replace("'", "''");
+    let arglist_ps = arglist.replace("'", "''");
+
+    let ps_cmd = format!(
+        "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+        ioexe_ps, arglist_ps
+    );
+
+    println!(
+        "Deleting materials via IObit (single pass): [{}]",
+        files_to_delete.iter().cloned().collect::<Vec<_>>().join(", ")
+    );
+
+    let output = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy").arg("Bypass")
+        .arg("-Command")
+        .arg(ps_cmd)
+        .output()
+        .map_err(|e| format!("Failed to run PowerShell for IObit delete: {e}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        println!("IObit delete reported non-success: {}", stderr);
+    }
+
+    println!("IObit single-pass delete completed");
     Ok(())
 }
 

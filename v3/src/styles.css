@@ -1,824 +1,380 @@
-:root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  font-weight: 400;
-
-  color: #e5e7eb;
-  background-color: #0a0a0a;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
-
-/* Top toolbar styles */
-.top-toolbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #2d2d2d;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  z-index: 1002;
-  contain: layout style;
-}
-
-.toolbar-left .app-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 0;
-}
-
-.toolbar-nav {
-  display: flex;
-  gap: 8px;
-}
-
-.nav-btn {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid #404040;
-  border-radius: 6px;
-  color: #e5e7eb;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.nav-btn:hover {
-  background: #2d2d2d;
-  border-color: #525252;
-}
-
-.nav-btn.active {
-  background: #ff6b35;
-  border-color: #ff6b35;
-  color: #ffffff;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 8px;
-}
-
-.toolbar-icon-btn {
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: 1px solid #404040;
-  border-radius: 6px;
-  color: #e5e7eb;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toolbar-icon-btn:hover {
-  background: #2d2d2d;
-  border-color: #525252;
-}
-
-.toolbar-icon-btn .icon {
-  font-size: 16px;
-}
-
-/* Popover styles */
-[popover] {
-  background: #1a1a1a;
-  border: 1px solid #2d2d2d;
-  border-radius: 8px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  padding: 0;
-  margin: 0;
-  color: #e5e7eb;
-}
-
-.settings-popover, .help-popover {
-  width: 320px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #2d2d2d;
-  background: #0f0f0f;
-}
-
-.popover-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.popover-close {
-  background: none;
-  border: none;
-  color: #6b6b6b;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  transition: color 0.15s ease;
-}
-
-.popover-close:hover {
-  color: #ffffff;
-}
-
-.popover-content {
-  padding: 20px;
-}
-
-.setting-group {
-  margin-bottom: 20px;
-}
-
-.setting-group:last-child {
-  margin-bottom: 0;
-}
-
-.setting-group label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 8px;
-}
-
-.setting-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.setting-btn {
-  padding: 8px 12px;
-  background: #404040;
-  border: 1px solid #525252;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.setting-btn:hover {
-  background: #525252;
-  border-color: #666666;
-}
-
-.setting-btn.danger {
-  background: #2d1b1b;
-  border-color: #4a2c2c;
-}
-
-.setting-btn.danger:hover {
-  background: #3d2525;
-  border-color: #ff6b35;
-}
-
-.help-section {
-  margin-bottom: 20px;
-}
-
-.help-section:last-child {
-  margin-bottom: 0;
-}
-
-.help-section h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.help-section p {
-  margin: 4px 0;
-  font-size: 0.875rem;
-  color: #e5e7eb;
-  line-height: 1.4;
-}
-
-.help-section a {
-  color: #ff6b35;
-  text-decoration: none;
-}
-
-.help-section a:hover {
-  text-decoration: underline;
-}
-
-.container {
-  margin: 0;
-  padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  min-height: 100vh;
-}
-
-header {
-  text-align: center;
-  margin-bottom: 48px;
-  padding: 32px 0;
-}
-
-header h1 {
-  color: #ffffff;
-  margin-bottom: 8px;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-header p {
-  color: #9ca3af;
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-section {
-  margin-bottom: 32px;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-section h2 {
-  margin-top: 0;
-  margin-bottom: 24px;
-  color: #ffffff;
-  border-bottom: none;
-  padding-bottom: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-/* Section toolbars */
-.section-toolbar {
-  display: flex;
-  padding-top: 60px;
-}
-
-.toolbar-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.toolbar-title h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.item-count {
-  font-size: 0.875rem;
-  color: #6b6b6b;
-  background: #2d2d2d;
-  padding: 4px 8px;
-  border-radius: 12px;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #404040;
-  border: 1px solid #525252;
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.toolbar-btn:hover {
-  background: #525252;
-  border-color: #666666;
-}
-
-.btn-icon {
-  font-size: 1rem;
-}
-
-.installations-grid, .presets-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-  contain: layout style;
-}
-
-/* Container queries for responsive grids */
-@container (max-width: 768px) {
-  .installations-grid, .presets-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@container (min-width: 1200px) {
-  .installations-grid, .presets-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.installation-card {
-  background: #1a1a1a;
-  border: 1px solid #2d2d2d;
-  border-radius: 8px;
-  padding: 20px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.installation-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.preset-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  object-fit: cover;
-  border: 1px solid #404040;
-}
-
-.installed-preset-info {
-  color: #10b981;
-  font-size: 0.875rem;
-  margin: 8px 0 4px 0;
-  font-weight: 500;
-}
-
-.no-preset-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 8px 0 4px 0;
-  font-style: italic;
-}
-
-.installation-card:hover, .preset-card:hover {
-  border-color: #404040;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-}
-
-.installation-card.selected, .preset-card.selected {
-  border-color: #ff6b35;
-  background: #1f1f1f;
-  box-shadow: 0 0 0 1px #ff6b35;
-}
-
-.installation-card h3, .preset-card h3 {
-  margin: 0 0 12px 0;
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.preset-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.preset-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid #2d2d2d;
-  background: #0f0f0f;
-  flex-shrink: 0;
-}
-
-.preset-header h3 {
-  margin: 0;
-  flex: 1;
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.install-path {
-  font-size: 0.875rem;
-  color: #6b6b6b;
-  margin: 8px 0;
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.badge.preview {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.badge.release {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.action-btn {
-  padding: 14px 24px;
-  border: 1px solid #525252;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  background: #404040;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.action-btn:hover {
-  background: #525252;
-  border-color: #666666;
-}
-
-.action-btn.danger {
-  background: #2d1b1b;
-  border-color: #4a2c2c;
-}
-
-.action-btn.danger:hover {
-  background: #3d2525;
-  border-color: #ff6b35;
-}
-
-.drop-zone {
-  border: 2px dashed #2d2d2d;
-  border-radius: 12px;
-  padding: 48px;
-  text-align: center;
-  color: #6b6b6b;
-  transition: all 0.2s ease;
-  background: #1a1a1a;
-}
-
-.drop-zone.drag-over {
-  border-color: #ff6b35;
-  background: #2d1f1a;
-  color: #ff9f7a;
-}
-
-.status {
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  font-size: 0.875rem;
-}
-
-.status.error {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.progress-container {
-  width: 100%;
-  background-color: var(--surface);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 1rem;
-}
-
-.progress-bar {
-  height: 8px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
-  width: 0%;
-  transition: width 0.3s ease;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-#console-section {
-  margin-top: 2rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  overflow: hidden;
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s ease;
-}
-
-.console-header:hover {
-  background: #f3f4f6;
-}
-
-.console-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #374151;
-}
-
-.console-arrow {
-  font-size: 1.2rem;
-  color: #6b7280;
-  transition: transform 0.2s ease;
-}
-
-.console-panel {
-  max-height: 300px;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.console-panel.collapsed {
-  max-height: 0;
-}
-
-.console-panel.expanded .console-arrow {
-  transform: rotate(180deg);
-}
-
-.console-output {
-  padding: 1rem;
-  background: #1a1a1a;
-  color: #00ff00;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  max-height: 250px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.console-clear-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ccc;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.console-clear-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.console-panel {
-  position: relative;
-}
-
-.install-preset-btn {
-  margin-top: 16px;
-  padding: 14px 24px;
-  background: #404040;
-  color: #ffffff;
-  border: 1px solid #525252;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  width: 100%;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.install-preset-btn:hover {
-  background: #525252;
-  border-color: #666666;
-  color: #ffffff;
-}
-
-button {
-  border-radius: 6px;
-  border: 1px solid #2d2d2d;
-  padding: 12px 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-family: inherit;
-  color: #ffffff;
-  background: #1a1a1a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-button:hover {
-  background: #2d2d2d;
-  border-color: #404040;
-}
-
-button:active {
+@import "tailwindcss";
+@import "./theme.css";
+
+/* Custom utilities - must be at top level, not nested in @layer */
+@utility panel { @apply rounded-lg border shadow-sm; background-color: var(--app-panel); border-color: var(--app-border); }
+@utility panel__header { @apply border-b px-4 py-3; border-color: var(--app-border); }
+@utility panel__title { @apply text-base font-semibold; }
+@utility panel__body { @apply p-4; }
+
+@utility button {
+  @apply inline-flex items-center justify-center gap-2 rounded-md border-2 px-4 py-2 text-sm font-medium transition-all select-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer;
+  color: var(--app-fg);
+  border-color: var(--app-border);
+  background-color: color-mix(in oklab, var(--app-panel) 96%, transparent);
+  box-shadow: 0 3px 0 0 color-mix(in oklab, var(--app-border) 80%, black 20%);
   transform: translateY(0);
+  &:hover { 
+    background-color: color-mix(in oklab, var(--app-panel) 88%, transparent);
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 0 color-mix(in oklab, var(--app-border) 80%, black 20%);
+  }
+  &:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--app-border) 80%, black 20%);
+  }
 }
 
-/* Slideout Sidepanel */
-.actions-sidepanel {
-  position: fixed;
-  top: 0;
-  left: -320px;
-  width: 320px;
-  height: 100vh;
-  background: #1a1a1a;
-  border-right: 1px solid #2d2d2d;
-  z-index: 1000;
-  transition: left 0.3s ease;
-  contain: layout style paint;
-  overflow-y: auto;
+@utility button--primary {
+  color: white;
+  background-color: var(--brand-accent-600);
+  border-color: var(--brand-accent-500);
+  box-shadow: 0 3px 0 0 color-mix(in oklab, var(--brand-accent-600) 80%, black 20%);
+  &:hover { 
+    background-color: var(--brand-accent-500);
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 0 color-mix(in oklab, var(--brand-accent-600) 80%, black 20%);
+  }
+  &:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-accent-600) 80%, black 20%);
+  }
 }
 
-.actions-sidepanel.open {
-  left: 0;
+@utility button--ghost { 
+  background-color: transparent;
+  box-shadow: none;
+  &:hover {
+    box-shadow: none;
+  }
+  &:active {
+    box-shadow: none;
+  }
 }
 
-.sidepanel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px;
-  border-bottom: 1px solid #2d2d2d;
-  background: #0f0f0f;
+@utility button--danger {
+  color: white;
+  background-color: var(--danger-600);
+  border-color: var(--danger-700);
+  box-shadow: 0 3px 0 0 color-mix(in oklab, var(--danger-700) 80%, black 20%);
+  &:hover { 
+    background-color: var(--danger-700);
+    transform: translateY(1px);
+    box-shadow: 0 2px 0 0 color-mix(in oklab, var(--danger-700) 80%, black 20%);
+  }
+  &:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--danger-700) 80%, black 20%);
+  }
 }
 
-.sidepanel-header h2 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 600;
+@utility badge { @apply inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold; border-color: var(--app-border); }
+
+@utility hover-lift {
+  @apply transition-transform;
+  &:hover { transform: translateY(-1px); }
 }
 
-.close-sidepanel {
-  background: none;
-  border: none;
-  color: #6b6b6b;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  transition: color 0.15s ease;
+/* Tailwind layers + BEM-style component classes for the installer UI */
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: var(--app-bg, var(--color-minecraft-slate-900));
+    color: var(--app-fg, var(--color-minecraft-slate-50));
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+  }
+
+  :root {
+    /* App semantic tokens backed by theme colors */
+    --app-bg: var(--color-minecraft-slate-900);
+    --app-panel: var(--color-minecraft-slate-800);
+    --app-elev: var(--color-minecraft-slate-700);
+    --app-fg: var(--color-minecraft-slate-50);
+    --app-muted: var(--color-minecraft-slate-300);
+    --app-border: var(--color-minecraft-slate-700);
+    --brand-accent-500: var(--color-minecraft-blue-500);
+    --brand-accent-600: var(--color-minecraft-blue-600);
+    --success-500: var(--color-minecraft-green-500);
+    --success-600: var(--color-minecraft-green-600);
+    --danger-600: var(--color-minecraft-red-600);
+    --danger-700: var(--color-minecraft-red-700);
+    --danger-800: var(--color-minecraft-red-800);
+  }
 }
 
-.close-sidepanel:hover {
-  color: #ffffff;
+@layer components {
+  /* App shell */
+  .app {
+    @apply grid min-h-screen;
+    grid-template-rows: 3rem 1fr;
+  }
+
+  .app__header {
+    @apply sticky top-0 z-40 flex items-center gap-3 border-b px-4;
+    background-color: color-mix(in oklab, var(--app-bg) 85%, black 15%);
+    border-color: var(--app-border);
+  }
+
+  .app__brand {
+    @apply text-sm font-semibold tracking-wide;
+  }
+
+  .app__badge {
+    @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold border;
+    border-color: var(--app-border);
+    background-color: var(--success-600);
+    color: white;
+  }
+
+  .app__body {
+    @apply grid;
+    grid-template-columns: var(--width-sidenav) 1fr;
+  }
+
+  .app__sidebar {
+    @apply hidden md:flex md:flex-col gap-1 border-r p-4;
+    background-color: var(--app-panel);
+    border-color: var(--app-border);
+  }
+
+  .app__content {
+    @apply p-4 md:p-6;
+  }
+
+  /* Sidebar navigation */
+  .nav { @apply flex flex-col gap-1; }
+
+  .nav__link {
+    @apply w-full text-left rounded-md px-3 py-2 text-sm border transition-colors;
+    color: var(--app-fg);
+    border-color: transparent;
+    background-color: color-mix(in oklab, var(--app-panel) 96%, transparent);
+  }
+
+  .nav__link:hover {
+    border-color: var(--app-border);
+    background-color: color-mix(in oklab, var(--app-panel) 88%, transparent);
+  }
+
+  .nav__link--active {
+    border-color: var(--brand-accent-500);
+    outline: 2px solid color-mix(in oklab, var(--brand-accent-500) 35%, transparent);
+    background-color: color-mix(in oklab, var(--brand-accent-500) 20%, var(--app-panel));
+  }
+
+  /* Panels / cards - utilities moved to top level */
+
+  /* Sections */
+  .section { @apply space-y-2; }
+  .section__title { @apply text-xs font-semibold uppercase tracking-wider; color: var(--app-muted); }
+  .divider { @apply my-4 h-px w-full; background-color: var(--app-border); }
+
+  /* Buttons - utilities moved to top level */
+
+  /* Form controls */
+  .field { @apply grid gap-1; }
+  .field__label { @apply text-xs font-medium; color: var(--app-muted); }
+  .field__control { @apply relative; }
+  .field__input { @apply w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:ring-2; border-color: var(--app-border); color: var(--app-fg); }
+  .field__input:focus { --tw-ring-color: var(--brand-accent-500); border-color: var(--brand-accent-500); }
+
+  /* Badges - utilities moved to top level */
+  .badge--on { color: black; background-color: var(--color-minecraft-green-300); border-color: var(--color-minecraft-green-400); }
 }
 
-.sidepanel-content {
-  padding: 20px;
+@layer utilities {
+  .surface { background-color: var(--app-panel); border-color: var(--app-border); }
 }
 
-.actions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* Map existing markup in index.html to styled components */
+@layer components {
+  /* Top toolbar */
+  .top-toolbar {
+    @apply sticky top-0 z-50 flex h-12 items-center justify-between border-b px-3 md:px-4;
+    background-color: color-mix(in oklab, var(--app-bg) 85%, black 15%);
+    border-color: var(--app-border);
+  }
+  .app-title { @apply text-sm md:text-base font-semibold; }
+  .toolbar-nav { @apply flex items-center gap-1; }
+  .nav-btn {
+    @apply rounded-md border px-3 py-1.5 text-xs md:text-sm font-medium transition-colors;
+    color: var(--app-fg);
+    border-color: transparent;
+    background-color: color-mix(in oklab, var(--app-panel) 96%, transparent);
+  }
+  .nav-btn:hover { border-color: var(--app-border); background-color: color-mix(in oklab, var(--app-panel) 88%, transparent); }
+  .nav-btn.active { border-color: var(--brand-accent-500); outline: 2px solid color-mix(in oklab, var(--brand-accent-500) 35%, transparent); background-color: color-mix(in oklab, var(--brand-accent-500) 20%, var(--app-panel)); }
+  .toolbar-icon-btn { @apply grid h-8 w-8 place-items-center rounded-md border text-sm; border-color: var(--app-border); }
 
-.actions-list .action-btn {
-  width: 100%;
-  text-align: left;
-  justify-content: flex-start;
-}
+  /* Layout */
+  .app-layout { @apply relative; }
+  .main-content { @apply mx-auto max-w-7xl p-4 md:p-6; }
+  .app-header h1 { @apply text-xl font-semibold; }
+  .app-header p { @apply text-sm; }
 
-.sidepanel-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
+  /* Slideout sidepanel (mobile) */
+  .mobile-menu-toggle { @apply md:hidden absolute left-3 top-14 z-40 grid h-10 w-10 place-items-center rounded-md border; border-color: var(--app-border); background-color: var(--app-panel); }
+  .mobile-menu-toggle > span { @apply block h-0.5 w-5 rounded; background-color: var(--app-fg); }
+  .mobile-menu-toggle > span + span { @apply mt-1; }
 
-.sidepanel-overlay.visible {
-  opacity: 1;
-  visibility: visible;
-}
+  .actions-sidepanel {
+    @apply fixed left-0 top-0 z-50 h-full w-72 -translate-x-full transform border-r p-4 transition-transform md:hidden;
+    background-color: var(--app-panel);
+    border-color: var(--app-border);
+  }
+  .actions-sidepanel.open { @apply translate-x-0; }
+  .sidepanel-header { @apply mb-3 flex items-center justify-between; }
+  .sidepanel-content { @apply overflow-y-auto; }
+  .sidepanel-overlay { @apply fixed inset-0 z-40 hidden bg-black/50 md:hidden; }
+  .sidepanel-overlay.visible { @apply block; }
 
-/* Responsive visibility classes */
-.mobile-only {
-  display: none;
-}
+  /* Desktop/Mobile visibility helpers */
+  .desktop-only { @apply hidden md:block; }
+  .mobile-only { @apply md:hidden; }
 
-.desktop-only {
-  display: block;
-}
+  /* Section toolbars */
+  .section-toolbar { @apply mb-3 flex items-center justify-between; }
+  .toolbar-title { @apply flex items-center gap-2; }
+  .toolbar-title h2 { @apply text-lg font-semibold; }
+  .item-count { @apply text-xs text-muted; }
+  .toolbar-actions { @apply flex items-center gap-2; }
+  .toolbar-btn { @apply button; }
 
-/* Container queries for responsive behavior */
-@container (max-width: 768px) {
-  .mobile-menu-toggle {
-    display: flex;
+  /* Actions */
+  .actions-list { @apply grid gap-2; }
+  .actions-grid { @apply grid gap-2 sm:grid-cols-2 lg:grid-cols-3; }
+  .action-btn { @apply button; }
+  .action-btn.danger { @apply button--danger; }
+
+  /* Installations grid/cards */
+  .installations-grid { @apply grid gap-3 md:grid-cols-2 lg:grid-cols-3; }
+  .installation-card { @apply panel hover-lift; }
+  .installation-card.selected { border-color: var(--brand-accent-500); outline: 2px solid color-mix(in oklab, var(--brand-accent-500) 35%, transparent); }
+  .installation-header { @apply flex items-center justify-between border-b px-4 py-3; border-color: var(--app-border); }
+  .installation-title { @apply flex items-center gap-2; }
+  .installation-title h3 { @apply text-sm font-semibold; }
+  .preset-icon { @apply size-6 rounded-sm object-cover; }
+  .preview-badge { @apply badge; background-color: var(--brand-accent-600); color: white; border-color: color-mix(in oklab, var(--brand-accent-600) 70%, black 30%); }
+  .installation-path { @apply px-4 pt-2 text-xs text-muted break-all; }
+  .installed-preset-info, .no-preset-info { @apply px-4 text-xs; }
+  .no-preset-info { @apply text-muted; }
+  .installation-actions { @apply panel__body flex items-center gap-2; }
+  .checkbox-label { @apply text-xs text-muted; }
+
+  /* Presets */
+  .presets-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
+  .preset-card { @apply panel hover-lift cursor-pointer; }
+  .preset-card.selected { border-color: var(--brand-accent-500); outline: 2px solid color-mix(in oklab, var(--brand-accent-500) 35%, transparent); }
+  .preset-header { @apply flex items-center gap-3 border-b px-4 py-3; border-color: var(--app-border); }
+  .install-preset-btn { @apply m-4 button button--primary; }
+
+  /* Empty state */
+  .empty-state { @apply panel p-6 text-center text-sm; color: var(--app-muted); }
+
+  /* Drag & drop */
+  .drop-zone { @apply my-6 grid h-28 place-items-center rounded-md border-2 border-dashed; border-color: var(--app-border); background-color: color-mix(in oklab, var(--app-panel) 92%, transparent); }
+  .drop-zone.drag-over { background-color: color-mix(in oklab, var(--brand-accent-500) 10%, var(--app-panel)); border-color: var(--brand-accent-500); }
+
+  /* Status & progress */
+  .status { @apply text-sm; }
+  .status.error { color: var(--danger-600); }
+  .progress-container { @apply mt-2 h-2 w-full overflow-hidden rounded bg-black/30; }
+  .progress-bar { @apply h-full w-1/2 bg-[color:var(--brand-accent-600)]; }
+
+  /* Console */
+  .console-header { @apply mt-6 flex cursor-pointer items-center justify-between rounded-t-md border px-4 py-2; border-color: var(--app-border); background-color: var(--app-panel); }
+  .console-panel { @apply overflow-hidden rounded-b-md border; border-color: var(--app-border); background-color: var(--app-panel); max-height: 18rem; transition: max-height .2s ease; }
+  .console-panel.collapsed { max-height: 0; border-top-width: 0; }
+  .console-panel.expanded { max-height: 18rem; }
+  .console-output { @apply h-56 whitespace-pre-wrap overflow-auto p-3 text-xs font-mono; }
+  .console-clear-btn { @apply m-2 self-end button; }
+
+  /* Popovers */
+  .settings-popover, .help-popover { @apply rounded-md border shadow-lg; border-color: var(--app-border); background-color: var(--app-panel); color: var(--app-fg); }
+  .popover-header { @apply flex items-center justify-between border-b px-4 py-2; border-color: var(--app-border); }
+  .popover-content { @apply p-4 space-y-4; }
+  .setting-group > label { @apply block text-xs font-semibold text-muted mb-1; }
+  .setting-buttons { @apply flex flex-wrap gap-2; }
+  .setting-btn { @apply button; }
+  .setting-btn.danger { @apply button--danger; }
+
+  /* Web Component BEM Classes */
+  /* These classes are used within Web Component shadow DOM */
+  
+  /* Installation Card Component */
+  .wc-installation-card {
+    @apply rounded-lg border p-4 transition-all duration-200;
+    background-color: var(--app-panel);
+    border-color: var(--app-border);
   }
   
-  .mobile-only {
-    display: block;
+  .wc-installation-card.selected {
+    border-color: var(--brand-accent-600);
+    background: color-mix(in oklab, var(--brand-accent-600) 5%, var(--app-panel));
   }
   
-  .desktop-only {
-    display: none;
+  /* Preset Card Component */
+  .wc-preset-card {
+    @apply rounded-lg border p-4 transition-all duration-200 cursor-pointer;
+    background-color: var(--app-panel);
+    border-color: var(--app-border);
   }
   
-  .main-content {
-    padding: 20px;
-    gap: 24px;
+  .wc-preset-card:hover {
+    @apply -translate-y-0.5 shadow-lg;
+    border-color: var(--brand-accent-500);
   }
   
-  .app-header h1 {
-    font-size: 2rem;
+  .wc-preset-card.selected {
+    border-color: var(--brand-accent-600);
+    background: color-mix(in oklab, var(--brand-accent-600) 5%, var(--app-panel));
   }
   
-  .section-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+  /* Console Panel Component */
+  .wc-console-panel {
+    @apply rounded-b-lg overflow-hidden transition-all duration-300;
+    background-color: var(--app-bg);
+    border: 1px solid var(--app-border);
+    border-top: none;
   }
   
-  .toolbar-actions {
-    justify-content: space-between;
-  }
-}
-
-@container (max-width: 480px) {
-  .main-content {
-    padding: 16px;
+  .wc-console-header {
+    @apply flex justify-between items-center px-4 py-3 rounded-t-lg cursor-pointer select-none;
+    background-color: var(--app-panel);
+    border: 1px solid var(--app-border);
   }
   
-  .section-toolbar {
-    padding: 12px 16px;
+  /* Status Bar Component */
+  .wc-status-bar {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg;
+    background-color: var(--app-panel);
+    border: 1px solid var(--app-border);
   }
   
-  .toolbar-title {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  /* Toolbar Component */
+  .wc-toolbar {
+    @apply flex justify-between items-center p-4 rounded-lg;
+    background-color: var(--app-panel);
+    border: 1px solid var(--app-border);
   }
   
-  .installation-card, .preset-card {
-    padding: 16px;
+  .wc-toolbar-btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm cursor-pointer transition-all duration-200;
+    background-color: var(--app-bg);
+    border: 1px solid var(--app-border);
+  }
+  
+  .wc-toolbar-btn:hover {
+    background-color: var(--app-border);
+  }
+  
+  .wc-toolbar-btn:active {
+    @apply scale-95;
   }
 }
