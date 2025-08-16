@@ -214,11 +214,11 @@
   .installation-title h3 { @apply text-sm font-semibold; }
   .preset-icon { @apply size-6 rounded-sm object-cover; }
   .preview-badge { @apply badge bg-brand-accent-600 text-white; border-color: color-mix(in oklab, var(--color-brand-accent-600) 70%, black 30%); }
-  .installation-path { @apply px-4 pt-2 text-xs text-muted break-all; }
+  .installation-path { @apply px-4 pt-2 text-xs text-app-muted break-all font-mono select-all; }
   .installed-preset-info, .no-preset-info { @apply px-4 text-xs; }
-  .no-preset-info { @apply text-muted; }
+  .no-preset-info { @apply text-app-muted; }
   .installation-actions { @apply panel__body flex items-center gap-2; }
-  .checkbox-label { @apply text-xs text-muted; }
+  .checkbox-label { @apply text-xs text-app-muted; }
 
   /* Presets */
   .presets-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-3; }
@@ -264,13 +264,32 @@
   .setting-btn { @apply button; }
   .setting-btn.danger { @apply button--danger; }
 
+  .status-alert {
+    @apply fixed right-2 bottom-14 z-40 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg cursor-pointer select-none;
+  }
+
   /* Console Panel Component */
   .console-container {
-    @apply font-mono;
+    @apply flex flex-col overflow-hidden relative;
   }
   
   .console-output {
     @apply font-mono;
     font-feature-settings: "liga" 0, "calt" 0;
+  }
+
+  .console-clear-btn {
+    @apply font-sans;
+  }
+
+  .console-panel--expanded { @apply max-h-80; }
+  .console-panel--collapsed { @apply max-h-0; }
+
+  body:has(.console-panel--expanded) {
+    @apply overflow-hidden h-screen;
+  }
+
+  body:has(.console-panel--expanded) .status-alert {
+    @apply bottom-80;
   }
 }

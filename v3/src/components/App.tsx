@@ -1,29 +1,28 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { Settings } from 'lucide-react';
 import { ToolbarSection } from './ToolbarSection';
 import { PresetCard } from './PresetCard';
 import { InstallationCard } from './InstallationCard';
-import { StatusBar } from './StatusBar';
+import { StatusBarContainer } from './StatusBar';
 import { ConsolePanel } from './ConsolePanel';
 import { useAppStore } from '../store/appStore';
+import { useStatusStore } from '../store/statusStore';
 
 export const App: React.FC = () => {
+    const { t } = useTranslation();
+  const { addMessage } = useStatusStore();
   const {
     installations,
     presets,
     selectedInstallations,
     selectedPreset,
-    status,
-    isLoading,
-    isError,
     consoleOutput,
     activeTab,
     toolbarOpen,
     setSelectedInstallations,
     setSelectedPreset,
-    setStatus,
-    setIsError,
     setActiveTab,
     setToolbarOpen,
     addConsoleOutput,
@@ -55,46 +54,40 @@ export const App: React.FC = () => {
 
   const handlePresetInstall = async (uuid: string) => {
     if (selectedInstallations.size === 0) {
-      setStatus('Please select at least one installation');
-      setIsError(true);
+      addMessage({ message: t('status_select_installation_warning'), type: 'error' });
       return;
     }
 
     try {
-      const store = useAppStore.getState();
-      store.setStatus('Installing preset...');
-      store.setIsLoading(true);
-      store.setIsError(false);
-      store.addConsoleOutput(`Installing preset ${uuid} to ${selectedInstallations.size} installation(s)`);
+      addMessage({ message: t('status_installing_preset'), type: 'loading' });
+      addConsoleOutput(t('log_installing_preset', { uuid, count: selectedInstallations.size }));
       
       for (const installPath of selectedInstallations) {
         await invoke('install_preset', { uuid, installPath });
-        store.addConsoleOutput(`Installed to: ${installPath}`);
+        addConsoleOutput(t('log_installed_to', { installPath }));
       }
       
-      store.setStatus('Preset installed successfully');
-      store.addConsoleOutput('Installation completed successfully');
+      addMessage({ message: t('status_install_success'), type: 'success' });
+      addConsoleOutput(t('log_install_complete'));
       // Refresh installations to show updated preset info
       await refreshInstallations();
     } catch (error) {
-      const errorMsg = `Error installing preset: ${error}`;
-      const store = useAppStore.getState();
-      store.setStatus(errorMsg);
-      store.setIsError(true);
-      store.addConsoleOutput(errorMsg);
+      const errorMsg = t('status_install_error', { error });
+      addMessage({ message: errorMsg, type: 'error' });
+      addConsoleOutput(errorMsg);
     }
   };
 
   const handleSettings = () => {
-    addConsoleOutput('Settings clicked - Feature coming soon');
+    addConsoleOutput(t('log_settings_clicked'));
   };
 
   const handleHelp = () => {
-    addConsoleOutput('Help clicked - Feature coming soon');
+    addConsoleOutput(t('log_help_clicked'));
   };
 
   const handleAbout = () => {
-    addConsoleOutput('About clicked - Feature coming soon');
+    addConsoleOutput(t('log_about_clicked'));
   };
 
   return (
@@ -107,19 +100,19 @@ export const App: React.FC = () => {
               className={`nav-btn ${activeTab === 'installations' ? 'active' : ''}`}
               onClick={() => setActiveTab('installations')}
             >
-              Installations
+              {t('tab_installations')}
             </button>
             <button 
               className={`nav-btn ${activeTab === 'presets' ? 'active' : ''}`}
               onClick={() => setActiveTab('presets')}
             >
-              Presets
+              {t('tab_presets')}
             </button>
             <button 
               className={`nav-btn ${activeTab === 'actions' ? 'active' : ''}`}
               onClick={() => setActiveTab('actions')}
             >
-              Actions
+              {t('tab_actions')}
             </button>
           </nav>
         </div>
@@ -141,7 +134,7 @@ export const App: React.FC = () => {
             className={`toolbar-popover ${toolbarOpen ? 'block' : 'hidden'}`}
             role="dialog"
             aria-modal="false"
-            aria-label="Toolbar options"
+            aria-label={t('toolbar_options_label')}
           >
             <ToolbarSection
               onSettingsClick={handleSettings}
@@ -155,14 +148,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Status bar */}
-      <div className="px-4">
-        <StatusBar 
-          message={status}
-          isError={isError}
-          isLoading={isLoading}
-        />
-      </div>
+      <StatusBarContainer />
 
       {/* Main content */}
       <main className="p-4 pb-32">
@@ -172,11 +158,11 @@ export const App: React.FC = () => {
             <section className="installations-container">
               <div className="section-toolbar flex justify-between items-center mb-4">
                 <div className="toolbar-title">
-                  <h2 className="text-lg font-semibold">Minecraft Installations</h2>
-                  <span className="text-sm opacity-75">{installations.length} found</span>
+                  <h2 className="text-lg font-semibold">{t('installations_title')}</h2>
+                  <span className="text-sm opacity-75">{t('installations_found_count', { count: installations.length })}</span>
                 </div>
               </div>
-              <div className="installations-list grid gap-4">
+              <div className="installations-list grid gap-4 grid-cols-2">
                 {installations.length > 0 ? (
                   installations.map((installation) => (
                     <InstallationCard
@@ -188,7 +174,7 @@ export const App: React.FC = () => {
                   ))
                 ) : (
                   <div className="empty-state text-center py-8">
-                    <p>No Minecraft installations found</p>
+                    <p>{t('installations_none_found')}</p>
                   </div>
                 )}
               </div>
@@ -199,8 +185,8 @@ export const App: React.FC = () => {
             <section className="presets-container">
               <div className="section-toolbar flex justify-between items-center mb-4">
                 <div className="toolbar-title">
-                  <h2 className="text-lg font-semibold">Available Presets</h2>
-                  <span className="text-sm opacity-75">{presets.length} loaded</span>
+                  <h2 className="text-lg font-semibold">{t('presets_title')}</h2>
+                  <span className="text-sm opacity-75">{t('presets_loaded_count', { count: presets.length })}</span>
                 </div>
               </div>
               <div className="presets-list grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -216,7 +202,7 @@ export const App: React.FC = () => {
                   ))
                 ) : (
                   <div className="empty-state text-center py-8 col-span-full">
-                    <p>No presets available</p>
+                    <p>{t('presets_none_available')}</p>
                   </div>
                 )}
               </div>
@@ -226,20 +212,20 @@ export const App: React.FC = () => {
           {activeTab === 'actions' && (
             <section className="actions-container">
               <div className="section-toolbar mb-4">
-                <h2 className="text-lg font-semibold">Actions</h2>
+                <h2 className="text-lg font-semibold">{t('actions_title')}</h2>
               </div>
               <div className="actions-grid grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <button className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border">
-                  <h3 className="font-semibold mb-2">Install .rtpack File</h3>
-                  <p className="text-sm opacity-75">Install a preset from a local .rtpack file</p>
+                  <h3 className="font-semibold mb-2">{t('action_install_rtpack_title')}</h3>
+                  <p className="text-sm opacity-75">{t('action_install_rtpack_desc')}</p>
                 </button>
                 <button className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border">
-                  <h3 className="font-semibold mb-2">Install Material Files</h3>
-                  <p className="text-sm opacity-75">Install individual material files</p>
+                  <h3 className="font-semibold mb-2">{t('action_install_materials_title')}</h3>
+                  <p className="text-sm opacity-75">{t('action_install_materials_desc')}</p>
                 </button>
                 <button className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border">
-                  <h3 className="font-semibold mb-2">Backup Selected</h3>
-                  <p className="text-sm opacity-75">Create backups of selected installations</p>
+                  <h3 className="font-semibold mb-2">{t('action_backup_title')}</h3>
+                  <p className="text-sm opacity-75">{t('action_backup_desc')}</p>
                 </button>
               </div>
             </section>

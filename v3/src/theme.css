@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/martian-mono";
 @theme {
-    --font-mono: 'Martian Mono Variable', 'Martian Mono', var(--font-monocraft), monospace;
+    --font-mono: 'Martian Mono Variable', 'Martian Mono', system-monospace, monospace;
     --font-sans: 'Inter Variable', Inter, Helvetica, Arial, system-ui, sans-serif;
     --height-app: calc(100vh - (--spacing(16)));
   

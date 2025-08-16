@@ -1,4 +1,6 @@
 import React from 'react';
+import { cx } from 'classix';
+import PresetIcon from './PresetIcon';
 
 export interface Installation {
   FriendlyName: string;
@@ -30,23 +32,18 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
   const checkboxId = `install-${installation.InstallLocation.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   const presetIcon = installation.installed_preset ? (
-    <img 
-      src={`https://cdn.jsdelivr.net/gh/BetterRTX/BetterRTX-Packs@main/packs/${installation.installed_preset.uuid}/icon.png`}
-      className="preset-icon w-6 h-6 rounded"
-      alt={installation.installed_preset.name}
-      title={`Installed: ${installation.installed_preset.name}`}
-      onError={(e) => {
-        (e.target as HTMLImageElement).style.display = 'none';
-      }}
-    />
+    <PresetIcon uuid={installation.installed_preset.uuid} />
   ) : null;
 
   return (
-    <div 
-      className={`installation-card rounded-lg border p-4 transition-all duration-200 ${
-        selected ? 'selected bg-brand-accent/5 border-brand-accent-600' : 'bg-app-panel border-app-border'
-      }`}
+    <label 
+      className={cx(
+        'installation-card rounded-lg border p-4 transition-all duration-200',
+        selected ? 'selected bg-brand-accent/5 border-brand-accent-600' : 'bg-app-panel border-app-border',
+        installation.Preview ? 'preview order-2' : ''
+      )}
       data-path={installation.InstallLocation}
+      htmlFor={checkboxId} 
     >
       <div className="installation-header flex justify-between items-center mb-2">
         <div className="installation-title flex items-center gap-2">
@@ -62,7 +59,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
         )}
       </div>
       
-      <p className="installation-path text-sm my-1 break-all text-app-muted">
+      <p className="installation-path">
         {installation.InstallLocation}
       </p>
       
@@ -85,13 +82,12 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
           checked={selected}
           onChange={handleCheckboxChange}
         />
-        <label 
-          htmlFor={checkboxId} 
+        <span 
           className="checkbox-label text-sm cursor-pointer select-none text-app-fg"
         >
           Select for installation
-        </label>
+        </span>
       </div>
-    </div>
+    </label>
   );
 };

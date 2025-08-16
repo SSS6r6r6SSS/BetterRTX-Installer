@@ -26,9 +26,6 @@ interface AppState {
   presets: PackInfo[];
   selectedInstallations: Set<string>;
   selectedPreset: string | null;
-  status: string;
-  isLoading: boolean;
-  isError: boolean;
   consoleOutput: string[];
   activeTab: 'installations' | 'presets' | 'actions';
   toolbarOpen: boolean;
@@ -38,9 +35,6 @@ interface AppState {
   setPresets: (presets: PackInfo[]) => void;
   setSelectedInstallations: (selected: Set<string>) => void;
   setSelectedPreset: (preset: string | null) => void;
-  setStatus: (status: string) => void;
-  setIsLoading: (loading: boolean) => void;
-  setIsError: (error: boolean) => void;
   setActiveTab: (tab: 'installations' | 'presets' | 'actions') => void;
   setToolbarOpen: (open: boolean) => void;
   addConsoleOutput: (message: string) => void;
@@ -58,9 +52,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   presets: [],
   selectedInstallations: new Set(),
   selectedPreset: null,
-  status: 'Ready',
-  isLoading: false,
-  isError: false,
   consoleOutput: [],
   activeTab: 'installations',
   toolbarOpen: false,
@@ -70,9 +61,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPresets: (presets) => set({ presets }),
   setSelectedInstallations: (selectedInstallations) => set({ selectedInstallations }),
   setSelectedPreset: (selectedPreset) => set({ selectedPreset }),
-  setStatus: (status) => set({ status }),
-  setIsLoading: (isLoading) => set({ isLoading }),
-  setIsError: (isError) => set({ isError }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setToolbarOpen: (toolbarOpen) => set({ toolbarOpen }),
 
@@ -87,63 +75,45 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Async actions
   refreshInstallations: async () => {
-    const { setStatus, setIsLoading, setIsError, addConsoleOutput, setInstallations } = get();
+    const { addConsoleOutput, setInstallations } = get();
     
     try {
-      setStatus('Loading Minecraft installations...');
-      setIsLoading(true);
-      setIsError(false);
       addConsoleOutput('Scanning for Minecraft installations...');
       
       const data = await invoke<Installation[]>('list_installations');
       setInstallations(data);
-      setStatus(`Found ${data.length} Minecraft installation(s)`);
       addConsoleOutput(`Found ${data.length} installations`);
     } catch (error) {
       const errorMsg = `Error loading installations: ${error}`;
-      setStatus(errorMsg);
-      setIsError(true);
       addConsoleOutput(errorMsg);
-    } finally {
-      setIsLoading(false);
     }
   },
 
   refreshPresets: async (forceRefresh = false) => {
-    const { setStatus, setIsLoading, setIsError, addConsoleOutput, setPresets } = get();
+    const { addConsoleOutput, setPresets } = get();
     
     try {
-      setStatus('Loading RTX presets...');
-      setIsLoading(true);
-      setIsError(false);
       addConsoleOutput('Fetching RTX presets...');
       
       const data = await invoke<PackInfo[]>('list_presets', { forceRefresh });
       setPresets(data);
-      setStatus(`Loaded ${data.length} RTX preset(s)`);
       addConsoleOutput(`Loaded ${data.length} presets`);
     } catch (error) {
       const errorMsg = `Error loading presets: ${error}`;
-      setStatus(errorMsg);
-      setIsError(true);
       addConsoleOutput(errorMsg);
-    } finally {
-      setIsLoading(false);
     }
   },
 
   clearCache: async () => {
-    const { addConsoleOutput, setStatus } = get();
+    const { addConsoleOutput } = get();
     
     try {
       addConsoleOutput('Clearing cache...');
       await invoke('clear_cache');
       addConsoleOutput('Cache cleared successfully');
-      setStatus('Cache cleared');
     } catch (error) {
       const errorMsg = `Error clearing cache: ${error}`;
       addConsoleOutput(errorMsg);
-      setStatus(errorMsg);
     }
   },
 }));
