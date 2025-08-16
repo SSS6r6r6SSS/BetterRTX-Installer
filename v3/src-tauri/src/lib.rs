@@ -1,0 +1,1059 @@
+// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use chrono::{Local, DateTime, Utc};
+use reqwest::blocking::{get, Client};
+use std::fs::{self, File};
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use serde::{Deserialize, Serialize};
+use walkdir::WalkDir;
+use winreg::enums::*;
+use winreg::RegKey;
+use std::collections::HashMap;
+
+const BRTX_DIR_NAME: &str = "graphics.bedrock";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Installation {
+    #[serde(rename = "FriendlyName")]
+    friendly_name: String,
+    #[serde(rename = "InstallLocation")]
+    install_location: String,
+    #[serde(rename = "Preview")]
+    preview: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    installed_preset: Option<InstalledPreset>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct InstalledPreset {
+    uuid: String,
+    name: String,
+    installed_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackInfo {
+    pub name: String,
+    pub uuid: String,
+    pub stub: String,
+    pub tonemapping: String,
+    pub bloom: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CacheEntry<T> {
+    data: T,
+    timestamp: DateTime<Utc>,
+    expires_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Cache {
+    presets: Option<CacheEntry<Vec<PackInfo>>>,
+    downloads: HashMap<String, CacheEntry<Vec<u8>>>,
+}
+
+fn local_app_data() -> PathBuf {
+    std::env::var("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("C:/Users/Public/AppData/Local"))
+}
+
+fn brtx_dir() -> PathBuf {
+    local_app_data().join(BRTX_DIR_NAME)
+}
+
+fn ensure_dir(p: &Path) -> std::io::Result<()> {
+    if !p.exists() {
+        fs::create_dir_all(p)?;
+    }
+    Ok(())
+}
+
+fn cache_file_path() -> PathBuf {
+    brtx_dir().join("cache.json")
+}
+
+fn load_cache() -> Cache {
+    let cache_file = brtx_dir().join("cache.json");
+    if cache_file.exists() {
+        if let Ok(content) = fs::read_to_string(&cache_file) {
+            if let Ok(cache) = serde_json::from_str::<Cache>(&content) {
+                return cache;
+            }
+        }
+    }
+    Cache {
+        presets: None,
+        downloads: HashMap::new(),
+    }
+}
+
+fn save_cache(cache: &Cache) -> Result<(), String> {
+    let cache_path = cache_file_path();
+    ensure_dir(cache_path.parent().unwrap()).map_err(|e| e.to_string())?;
+    let content = serde_json::to_string_pretty(cache).map_err(|e| e.to_string())?;
+    fs::write(cache_path, content).map_err(|e| e.to_string())
+}
+
+fn is_cache_valid<T>(cached: &CacheEntry<T>) -> bool {
+    Utc::now() < cached.expires_at
+}
+
+fn run_powershell(script: &str) -> Result<String, String> {
+    let output = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy").arg("Bypass")
+        .arg("-Command")
+        .arg(script)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|e| format!("Failed to spawn PowerShell: {e}"))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+fn is_sideloaded(install_location: &str) -> bool {
+    // Sideloaded if NOT under Program Files\WindowsApps
+    let lc = install_location.to_ascii_lowercase();
+    !lc.contains("windowsapps")
+}
+
+fn get_custom_iobit_path() -> Option<PathBuf> {
+    let config_file = brtx_dir().join("iobit_path.txt");
+    if config_file.exists() {
+        if let Ok(path_str) = fs::read_to_string(&config_file) {
+            let path = PathBuf::from(path_str.trim());
+            if path.exists() {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+fn get_iobit_path_cached() -> Option<PathBuf> {
+    // Check if we have a cached path
+    let cache_file = brtx_dir().join("iobit_path.txt");
+    if cache_file.exists() {
+        if let Ok(cached_path) = fs::read_to_string(&cache_file) {
+            let path = PathBuf::from(cached_path.trim());
+            if path.exists() {
+                return Some(path);
+            }
+        }
+    }
+    
+    // Fall back to automatic detection
+    get_iobit_unlocker_exe()
+}
+
+fn get_iobit_unlocker_exe() -> Option<PathBuf> {
+    // First check if user has set a custom path
+    if let Some(custom_path) = get_custom_iobit_path() {
+        return Some(custom_path);
+    }
+
+    // Try common install locations
+    let candidates = [
+        r"C:\\Program Files (x86)\\IObit\\IObit Unlocker\\IObitUnlocker.exe",
+        r"C:\\Program Files\\IObit\\IObit Unlocker\\IObitUnlocker.exe",
+    ];
+    for c in candidates { if Path::new(c).exists() { return Some(PathBuf::from(c)); } }
+
+    // Fallback: search Program Files dirs shallowly
+    for root in [r"C:\\Program Files", r"C:\\Program Files (x86)"] {
+        let rootp = Path::new(root);
+        if rootp.exists() {
+            for entry in WalkDir::new(rootp).max_depth(3) {
+                if let Ok(e) = entry {
+                    let p = e.path();
+                    if p.file_name().map(|n| n.to_string_lossy().eq_ignore_ascii_case("IObitUnlocker.exe")).unwrap_or(false) {
+                        return Some(p.to_path_buf());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn iobit_delete(iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<(), String> {
+    // RTX material files that need to be deleted before installation
+    let rtx_files_to_delete = [
+        "RTXStub.material.bin",
+        "RTXPostFX.Tonemapping.material.bin", 
+        "RTXPostFX.Bloom.material.bin"
+    ];
+    
+    // Attempt to delete RTX material files first (unconditional)
+    for file_name in &rtx_files_to_delete {
+        let target = location.join("data").join("renderer").join("materials").join(file_name);
+        println!("Attempting to delete RTX file via IObit: {}", target.display());
+        // Use PowerShell to mirror quoting behavior of v2
+        let arglist = format!("/Delete \"{}\"", target.display());
+        let ioexe_ps = iobit.display().to_string().replace("'", "''");
+        let arglist_ps = arglist.replace("'", "''");
+        let ps_cmd = format!(
+            "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+            ioexe_ps, arglist_ps
+        );
+        let output = Command::new("powershell.exe")
+            .arg("-NoProfile")
+            .arg("-ExecutionPolicy").arg("Bypass")
+            .arg("-Command")
+            .arg(ps_cmd)
+            .output()
+            .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!("IObit delete reported non-success for {}: {}", target.display(), stderr);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    
+    // Also delete any files that match the materials we're about to install (unconditional)
+    for m in materials {
+        let name = m.file_name().ok_or("invalid material filename")?;
+        let target = location.join("data").join("renderer").join("materials").join(name);
+        println!("Attempting to delete material via IObit: {}", target.display());
+        // Use PowerShell to mirror quoting behavior of v2
+        let arglist = format!("/Delete \"{}\"", target.display());
+        let ioexe_ps = iobit.display().to_string().replace("'", "''");
+        let arglist_ps = arglist.replace("'", "''");
+        let ps_cmd = format!(
+            "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+            ioexe_ps, arglist_ps
+        );
+        let output = Command::new("powershell.exe")
+            .arg("-NoProfile")
+            .arg("-ExecutionPolicy").arg("Bypass")
+            .arg("-Command")
+            .arg(ps_cmd)
+            .output()
+            .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!("IObit delete reported non-success for {}: {}", target.display(), stderr);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    Ok(())
+}
+
+fn iobit_copy(iobit: &Path, destination: &Path, materials: &[PathBuf]) -> Result<(), String> {
+    // Best-effort ensure destination directory for sideloaded installs
+    let dest_dir = destination.join("data").join("renderer").join("materials");
+    let _ = ensure_dir(&dest_dir);
+
+    if materials.is_empty() {
+        println!("No materials to copy");
+        return Ok(());
+    }
+
+    // Build the exact ArgumentList string used in PowerShell v2 implementation:
+    // '/Copy "src1","src2" "destDir"'
+    let sources_joined = materials
+        .iter()
+        .map(|m| m.display().to_string())
+        .collect::<Vec<_>>()
+        .join("\",\"");
+    let arglist = format!("/Copy \"{}\" \"{}\"", sources_joined, dest_dir.display());
+
+    // Escape single quotes for embedding in a single-quoted PS string
+    let ioexe_ps = iobit.display().to_string().replace("'", "''");
+    let arglist_ps = arglist.replace("'", "''");
+
+    let ps_cmd = format!(
+        "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+        ioexe_ps, arglist_ps
+    );
+
+    println!(
+        "Copying materials via IObit (single pass): [{}] -> {}",
+        materials
+            .iter()
+            .map(|m| m.file_name().unwrap_or_default().to_string_lossy().to_string())
+            .collect::<Vec<_>>()
+            .join(", "),
+        dest_dir.display()
+    );
+
+    let output = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy").arg("Bypass")
+        .arg("-Command")
+        .arg(ps_cmd)
+        .output()
+        .map_err(|e| format!("Failed to run PowerShell for IObit copy: {e}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("IObit copy via PowerShell failed: {}", stderr));
+    }
+
+    println!("IObit single-pass copy completed");
+    Ok(())
+}
+
+fn copy_shader_files(install_location: &str, materials: &[PathBuf], pack: &PackInfo) -> Result<(), String> {
+    let mc_dest = Path::new(install_location).join("data").join("renderer").join("materials");
+    let sideloaded = is_sideloaded(install_location);
+
+    // Prefer IObit Unlocker for both sideloaded and WindowsApps installs
+    if let Some(ioexe) = get_iobit_path_cached() {
+        println!("Using IObit Unlocker for delete+copy (sideloaded: {})", sideloaded);
+        match try_iobit_copy(&ioexe, install_location, materials) {
+            Ok(_) => {
+                let installed_preset = InstalledPreset {
+                    uuid: pack.uuid.clone(),
+                    name: pack.name.clone(),
+                    installed_at: chrono::Utc::now().to_rfc3339(),
+                };
+                if let Err(e) = save_installed_preset(install_location, &installed_preset) {
+                    println!("⚠ Failed to save preset tracking: {}", e);
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                println!("⚠ IObit Unlocker failed: {}", e);
+                // Continue to appropriate fallback below
+            }
+        }
+    } else {
+        println!("⚠ IObit Unlocker not found, using fallback method (sideloaded: {})", sideloaded);
+    }
+
+    if sideloaded {
+        // Fallback for sideloaded installations: ensure dir, delete then copy directly
+        ensure_dir(&mc_dest).map_err(|e| format!("Failed to create materials dir: {e}"))?;
+        for m in materials {
+            if !m.exists() { return Err(format!("Source material not found: {}", m.display())); }
+            let dest = mc_dest.join(m.file_name().ok_or("invalid material filename")?);
+            if dest.exists() {
+                println!("Removing existing file before copy: {}", dest.display());
+                let _ = fs::remove_file(&dest);
+            }
+            fs::copy(m, &dest).map_err(|e| format!("Direct copy failed to {}: {e}", dest.display()))?;
+        }
+        let installed_preset = InstalledPreset {
+            uuid: pack.uuid.clone(),
+            name: pack.name.clone(),
+            installed_at: chrono::Utc::now().to_rfc3339(),
+        };
+        if let Err(e) = save_installed_preset(install_location, &installed_preset) {
+            println!("⚠ Failed to save preset tracking: {}", e);
+        }
+        return Ok(());
+    }
+
+    // WindowsApps fallback: elevated PowerShell
+    println!("Attempting elevated PowerShell fallback...");
+    match try_elevated_copy(&mc_dest, materials) {
+        Ok(_) => {
+            let installed_preset = InstalledPreset {
+                uuid: pack.uuid.clone(),
+                name: pack.name.clone(),
+                installed_at: chrono::Utc::now().to_rfc3339(),
+            };
+            if let Err(e) = save_installed_preset(install_location, &installed_preset) {
+                println!("⚠ Failed to save preset tracking: {}", e);
+            }
+            Ok(())
+        }
+        Err(e) => Err(e)
+    }
+}
+
+fn try_iobit_copy(ioexe: &Path, install_location: &str, materials: &[PathBuf]) -> Result<(), String> {
+    println!("Starting IObit operations for {} files", materials.len());
+    let install_path = Path::new(install_location);
+    
+    // Delete existing files first
+    println!("Deleting existing material files...");
+    iobit_delete(ioexe, install_path, materials)?;
+    
+    // Copy new files
+    println!("Copying material files with IObit Unlocker...");
+    iobit_copy(ioexe, install_path, materials)?;
+    
+    // Skipping file verification per user preference
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    
+    println!("IObit operations completed successfully");
+    Ok(())
+}
+
+fn try_elevated_copy(mc_dest: &Path, materials: &[PathBuf]) -> Result<(), String> {
+    // Use PowerShell with elevation request to copy files
+    let mut ps_script = String::from("Start-Process powershell -Verb RunAs -ArgumentList '-Command', '");
+    
+    for m in materials {
+        let src = m.to_string_lossy().replace('\\', "\\\\").replace('\'', "\'\'");
+        let dest_file = mc_dest.join(m.file_name().unwrap());
+        let dest = dest_file.to_string_lossy().replace('\\', "\\\\").replace('\'', "\'\'");
+        ps_script.push_str(&format!("Copy-Item '{}' '{}' -Force; ", src, dest));
+    }
+    
+    ps_script.push_str("' -Wait");
+    
+    let output = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-ExecutionPolicy").arg("Bypass")
+        .arg("-Command")
+        .arg(&ps_script)
+        .output()
+        .map_err(|e| format!("Failed to run elevated PowerShell: {e}"))?;
+
+    if output.status.success() {
+        // Skipping file verification per user preference
+        Ok(())
+    } else {
+        Err(format!("Elevated PowerShell failed: {}", String::from_utf8_lossy(&output.stderr)))
+    }
+}
+
+fn extract_rtpack_to(pack: &Path, out_dir: &Path) -> Result<(), String> {
+    ensure_dir(out_dir).map_err(|e| e.to_string())?;
+    let mut f = File::open(pack).map_err(|e| format!("Open pack failed: {e}"))?;
+    let mut data = Vec::new();
+    f.read_to_end(&mut data).map_err(|e| format!("Read pack failed: {e}"))?;
+    let reader = std::io::Cursor::new(data);
+    let mut zip = zip::ZipArchive::new(reader).map_err(|e| format!("Invalid .rtpack: {e}"))?;
+    for i in 0..zip.len() {
+        let mut file = zip.by_index(i).map_err(|e| e.to_string())?;
+        let outpath = out_dir.join(file.name());
+        if file.name().ends_with('/') {
+            ensure_dir(&outpath).map_err(|e| e.to_string())?;
+        } else {
+            if let Some(parent) = outpath.parent() { ensure_dir(parent).map_err(|e| e.to_string())?; }
+            let mut outfile = File::create(&outpath).map_err(|e| e.to_string())?;
+            std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+fn find_materials(root: &Path) -> Vec<PathBuf> {
+    let mut v = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(Result::ok) {
+        let p = entry.path();
+        if p.is_file() && p.extension().map(|e| e == "bin").unwrap_or(false) {
+            if let Some(stem) = p.file_stem() {
+                let s = stem.to_string_lossy();
+                if s.contains("material") { v.push(p.to_path_buf()); }
+            }
+        }
+    }
+    v
+}
+
+fn read_json_file<T: for<'de> Deserialize<'de>>(p: &Path) -> Option<T> {
+    let s = fs::read_to_string(p).ok()?;
+    serde_json::from_str(&s).ok()
+}
+
+fn write_json_file<T: Serialize>(p: &Path, val: &T) -> Result<(), String> {
+    if let Some(parent) = p.parent() { ensure_dir(parent).map_err(|e| e.to_string())?; }
+    let s = serde_json::to_string_pretty(val).map_err(|e| e.to_string())?;
+    fs::write(p, s).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_installations() -> Result<Vec<Installation>, String> {
+    let ps = r#"
+    $ErrorActionPreference='Stop';
+    $pkgs = Get-AppxPackage -Name 'Microsoft.Minecraft*' | Where-Object { $_.InstallLocation -notlike '*Java*' };
+    $res = @();
+    foreach ($mc in $pkgs) {
+      $name = (Get-AppxPackageManifest -Package $mc).Package.Properties.DisplayName;
+      $res += [PSCustomObject]@{ FriendlyName=$name; InstallLocation=$mc.InstallLocation; Preview= ($mc.InstallLocation -like '*Beta*' -or $name -like '*Preview*') };
+    }
+    $res | ConvertTo-Json -Depth 3
+    "#;
+    let out = run_powershell(ps)?;
+    let out_trim = out.trim();
+    if out_trim.is_empty() { return Ok(vec![]); }
+    
+    let mut installations: Vec<Installation> = {
+        let parsed: Result<Vec<Installation>, _> = serde_json::from_str(out_trim);
+        if let Ok(v) = parsed { 
+            v 
+        } else {
+            // sometimes a single object is returned
+            let single: Installation = serde_json::from_str(out_trim).map_err(|e| e.to_string())?;
+            vec![single]
+        }
+    };
+    
+    // Add installed preset information to each installation
+    for installation in &mut installations {
+        installation.installed_preset = get_installed_preset(&installation.install_location);
+    }
+    
+    Ok(installations)
+}
+
+#[tauri::command]
+fn get_api_packs() -> Result<Vec<PackInfo>, String> {
+    list_presets(false)
+}
+
+#[tauri::command]
+fn list_presets(force_refresh: bool) -> Result<Vec<PackInfo>, String> {
+    let mut cache = load_cache();
+    
+    // Check if we have valid cached data and don't need to force refresh
+    if !force_refresh {
+        if let Some(ref cached_presets) = cache.presets {
+            if is_cache_valid(cached_presets) {
+                return Ok(cached_presets.data.clone());
+            }
+        }
+    }
+    
+    // Fetch fresh data from API
+    let packs_dir = brtx_dir().join("packs");
+    ensure_dir(&packs_dir).map_err(|e| e.to_string())?;
+    
+    let url = "https://bedrock.graphics/api";
+    let response = get(url).map_err(|e| e.to_string())?;
+    let text = response.text().map_err(|e| e.to_string())?;
+    
+    // Parse the JSON response directly as PackInfo array
+    let presets: Vec<PackInfo> = serde_json::from_str(&text)
+        .map_err(|e| format!("Failed to parse presets JSON: {}. Response was: {}", e, text))?;
+    
+    // Cache the results for 1 hour
+    let now = Utc::now();
+    let expires_at = now + chrono::Duration::hours(1);
+    // Update cache with fresh data
+    cache.presets = Some(CacheEntry {
+        data: presets.clone(),
+        timestamp: now,
+        expires_at,
+    });
+    
+    save_cache(&cache).map_err(|e| e.to_string())?;
+    
+    Ok(presets)
+}
+
+fn get_installed_preset(install_location: &str) -> Option<InstalledPreset> {
+    let presets_file = brtx_dir().join("installed_presets.json");
+    if let Some(installations) = read_json_file::<HashMap<String, InstalledPreset>>(&presets_file) {
+        return installations.get(install_location).cloned();
+    }
+    None
+}
+
+fn save_installed_preset(install_location: &str, preset: &InstalledPreset) -> Result<(), String> {
+    let presets_file = brtx_dir().join("installed_presets.json");
+    
+    // Load existing installations or create new map
+    let mut installations = read_json_file::<HashMap<String, InstalledPreset>>(&presets_file)
+        .unwrap_or_else(HashMap::new);
+    
+    // Update with new preset
+    installations.insert(install_location.to_string(), preset.clone());
+    
+    // Save using write_json_file
+    write_json_file(&presets_file, &installations)
+}
+
+fn get_cached_download(url: &str) -> Option<Vec<u8>> {
+    let cache = load_cache();
+    if let Some(cached) = cache.downloads.get(url) {
+        if is_cache_valid(cached) {
+            return Some(cached.data.clone());
+        }
+    }
+    None
+}
+
+fn cache_download(url: &str, data: &[u8]) -> Result<(), String> {
+    let mut cache = load_cache();
+    let now = Utc::now();
+    let expires_at = now + chrono::Duration::hours(24); // Cache downloads for 24 hours
+    
+    cache.downloads.insert(url.to_string(), CacheEntry {
+        data: data.to_vec(),
+        timestamp: now,
+        expires_at,
+    });
+    
+    save_cache(&cache)
+}
+
+#[tauri::command]
+fn clear_cache() -> Result<(), String> {
+    let cache_path = cache_file_path();
+    if cache_path.exists() {
+        fs::remove_file(cache_path).map_err(|e| e.to_string())?;
+    }
+    
+    // Also clear downloaded packs directory
+    let packs_dir = brtx_dir().join("packs");
+    if packs_dir.exists() {
+        fs::remove_dir_all(&packs_dir).map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn get_cache_info() -> Result<serde_json::Value, String> {
+    let cache = load_cache();
+    let mut info = serde_json::Map::new();
+    
+    if let Some(ref presets_cache) = cache.presets {
+        info.insert("presets_cached".to_string(), serde_json::Value::Bool(true));
+        info.insert("presets_count".to_string(), serde_json::Value::Number(presets_cache.data.len().into()));
+        info.insert("presets_expires".to_string(), serde_json::Value::String(presets_cache.expires_at.to_rfc3339()));
+    } else {
+        info.insert("presets_cached".to_string(), serde_json::Value::Bool(false));
+    }
+    
+    info.insert("downloads_cached".to_string(), serde_json::Value::Number(cache.downloads.len().into()));
+    
+    Ok(serde_json::Value::Object(info))
+}
+
+#[tauri::command]
+fn download_and_install_pack(uuid: String, selected_names: Vec<String>) -> Result<(), String> {
+    let all = list_installations()?;
+    // Map by InstallLocation because the UI sends InstallLocation values
+    let map: std::collections::HashMap<_, _> = all
+        .into_iter()
+        .map(|i| (i.install_location.clone(), i))
+        .collect();
+    
+    // Get the preset info from cached API data
+    let packs = get_api_packs()?;
+    let preset = packs.iter().find(|p| p.uuid == uuid).ok_or("Preset not found")?;
+    
+    let dir = brtx_dir().join("packs").join(&uuid);
+    ensure_dir(&dir).map_err(|e| e.to_string())?;
+    let client = Client::new();
+    
+    // Download files with caching
+    let dl = |url: &str, name: &str| -> Result<(), String> {
+        let file_path = dir.join(name);
+        
+        // Check if we have cached data
+        if let Some(cached_data) = get_cached_download(url) {
+            fs::write(&file_path, cached_data).map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+        
+        // Download fresh data
+        let mut resp = client.get(url).send().map_err(|e| e.to_string())?;
+        let mut data = Vec::new();
+        resp.copy_to(&mut data).map_err(|e| e.to_string())?;
+        
+        // Cache the download
+        let _ = cache_download(url, &data);
+        
+        // Save to file
+        fs::write(&file_path, data).map_err(|e| e.to_string())?;
+        Ok(())
+    };
+    dl(&preset.stub, "RTXStub.material.bin")?;
+    dl(&preset.tonemapping, "RTXPostFX.Tonemapping.material.bin")?;
+    dl(&preset.bloom, "RTXPostFX.Bloom.material.bin")?;
+
+    let materials = vec![
+        dir.join("RTXStub.material.bin"),
+        dir.join("RTXPostFX.Tonemapping.material.bin"),
+        dir.join("RTXPostFX.Bloom.material.bin"),
+    ];
+    for install_location in selected_names {
+        if let Some(ins) = map.get(&install_location) {
+            copy_shader_files(&ins.install_location, &materials, preset)?;
+        } else {
+            println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn install_from_rtpack(rtpack_path: String, selected_names: Vec<String>) -> Result<(), String> {
+    if !rtpack_path.to_ascii_lowercase().ends_with(".rtpack") { return Err("Invalid file type; expected .rtpack".into()); }
+    let pack_name = Path::new(&rtpack_path).file_stem().and_then(|s| s.to_str()).ok_or("Invalid pack path")?.to_string();
+    let out_dir = brtx_dir().join("packs").join(&pack_name);
+    extract_rtpack_to(Path::new(&rtpack_path), &out_dir)?;
+    let materials = find_materials(&out_dir);
+    if materials.is_empty() { return Err("No materials found in pack".into()); }
+    let all = list_installations()?;
+    let map: std::collections::HashMap<_, _> = all
+        .into_iter()
+        .map(|i| (i.install_location.clone(), i))
+        .collect();
+    for install_location in selected_names {
+        if let Some(ins) = map.get(&install_location) {
+            // Create a dummy pack for material file installation
+            let dummy_pack = PackInfo {
+                name: "Material Files".to_string(),
+                uuid: "material-files".to_string(),
+                stub: String::new(),
+                tonemapping: String::new(),
+                bloom: String::new(),
+            };
+            copy_shader_files(&ins.install_location, &materials, &dummy_pack)?;
+        } else {
+            println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn install_materials(material_paths: Vec<String>, selected_names: Vec<String>) -> Result<(), String> {
+    if material_paths.is_empty() { return Err("No files provided".into()); }
+    let materials: Vec<PathBuf> = material_paths.iter().map(PathBuf::from).collect();
+    let all = list_installations()?;
+    let map: std::collections::HashMap<_, _> = all.into_iter().map(|i| (i.install_location.clone(), i)).collect();
+    for install_location in selected_names {
+        if let Some(ins) = map.get(&install_location) {
+            // Create a dummy pack for material file installation
+            let dummy_pack = PackInfo {
+                name: "Material Files".to_string(),
+                uuid: "material-files".to_string(),
+                stub: String::new(),
+                tonemapping: String::new(),
+                bloom: String::new(),
+            };
+            copy_shader_files(&ins.install_location, &materials, &dummy_pack)?;
+        } else {
+            println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
+        }
+    }
+    Ok(())
+}
+
+fn backup_initial_shader_files(location: &str, backup_dir: &Path) -> Result<(), String> {
+    ensure_dir(backup_dir).map_err(|e| e.to_string())?;
+    let dlss = Path::new(location).join("nvngx_dlss.dll");
+    if dlss.exists() { let _ = fs::copy(&dlss, backup_dir.join("nvngx_dlss.dll")); }
+    let materials = [
+        "RTXStub.material.bin",
+        "RTXPostFX.Tonemapping.material.bin",
+        "RTXPostFX.Bloom.material.bin",
+    ];
+    let mc_src = Path::new(location).join("data").join("renderer").join("materials");
+    for m in materials { let src = mc_src.join(m); if src.exists() { let _ = fs::copy(&src, backup_dir.join(m)); } }
+    Ok(())
+}
+
+fn zip_dir(src_dir: &Path, dest_zip: &Path) -> Result<(), String> {
+    let file = File::create(dest_zip).map_err(|e| e.to_string())?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let src = src_dir.to_path_buf();
+    for entry in WalkDir::new(&src).into_iter().filter_map(Result::ok) {
+        let path = entry.path();
+        let name = path.strip_prefix(&src).map_err(|e| e.to_string())?.to_string_lossy().replace('\\', "/");
+        if path.is_file() {
+            zip.start_file(name, options).map_err(|e| e.to_string())?;
+            let mut f = File::open(path).map_err(|e| e.to_string())?;
+            std::io::copy(&mut f, &mut zip).map_err(|e| e.to_string())?;
+        } else if !name.is_empty() {
+            zip.add_directory(name + "/", options).map_err(|e| e.to_string())?;
+        }
+    }
+    zip.finish().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn backup_selected(dest_dir: String, selected_names: Option<Vec<String>>) -> Result<Vec<String>, String> {
+    let dest = PathBuf::from(dest_dir);
+    if !dest.exists() { return Err("Destination directory does not exist".into()); }
+    let all = list_installations()?;
+    // UI sends InstallLocation values in selected_names
+    let targets: Vec<Installation> = if let Some(names) = selected_names {
+        all
+            .into_iter()
+            .filter(|i| names.contains(&i.install_location))
+            .collect()
+    } else {
+        all
+    };
+    let mut created = Vec::new();
+    for ins in targets {
+        let instance = ins.install_location.split(['\\', '/']).last().unwrap_or("instance").replace(' ', "_");
+        let backup_dir = brtx_dir().join("backup").join(&ins.friendly_name);
+        ensure_dir(backup_dir.parent().unwrap()) .map_err(|e| e.to_string())?;
+        ensure_dir(&backup_dir).map_err(|e| e.to_string())?;
+        backup_initial_shader_files(&ins.install_location, &backup_dir)?;
+        let ts = Local::now().format("%Y-%m-%d_%H-%M");
+        let zip_path = dest.join(format!("betterrtx_backup_{}_{}.zip", instance, ts));
+        zip_dir(&backup_dir, &zip_path)?;
+        let rtpack = zip_path.with_extension("rtpack");
+        fs::rename(&zip_path, &rtpack).map_err(|e| e.to_string())?;
+        // Clean temp backup dir
+        let _ = fs::remove_dir_all(&backup_dir);
+        created.push(rtpack.to_string_lossy().to_string());
+    }
+    Ok(created)
+}
+
+#[tauri::command]
+fn install_dlss_for_selected(selected_names: Vec<String>) -> Result<(), String> {
+    let dir = brtx_dir().join("dlss");
+    if !dir.exists() {
+        ensure_dir(&dir).map_err(|e| e.to_string())?;
+        let client = Client::new();
+        let versions: serde_json::Value = client.get("https://bedrock.graphics/api/dlss").send().map_err(|e| e.to_string())?.json().map_err(|e| e.to_string())?;
+        let latest = versions.get("latest").and_then(|v| v.as_str()).ok_or("Invalid DLSS API response")?;
+        let zip_path = dir.join("nvngx_dlss.zip");
+        let mut resp = client.get(latest).send().map_err(|e| e.to_string())?;
+        let mut f = File::create(&zip_path).map_err(|e| e.to_string())?;
+        resp.copy_to(&mut f).map_err(|e| e.to_string())?;
+        // extract
+        extract_rtpack_to(&zip_path, &dir).or_else(|_| {
+            // Some DLSS zips may not be .rtpack format; try normal zip extraction path
+            let file = File::open(&zip_path).map_err(|e| e.to_string())?;
+            let mut zip = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
+            for i in 0..zip.len() {
+                let mut file = zip.by_index(i).map_err(|e| e.to_string())?;
+                let out = dir.join(file.name());
+                if file.name().ends_with('/') { ensure_dir(&out).map_err(|e| e.to_string())?; } else {
+                    if let Some(par) = out.parent() { ensure_dir(par).map_err(|e| e.to_string())?; }
+                    let mut of = File::create(&out).map_err(|e| e.to_string())?;
+                    std::io::copy(&mut file, &mut of).map_err(|e| e.to_string())?;
+                }
+            }
+            Ok::<(), String>(())
+        })?;
+        let _ = fs::remove_file(&zip_path);
+    }
+
+    let all = list_installations()?;
+    let map: std::collections::HashMap<_, _> = all
+        .into_iter()
+        .map(|i| (i.install_location.clone(), i))
+        .collect();
+    for install_location in selected_names {
+        if let Some(ins) = map.get(&install_location) {
+            let src = dir.join("nvngx_dlss.dll");
+            if !src.exists() { return Err("DLSS DLL not found".into()); }
+            let dest = Path::new(&ins.install_location).join("nvngx_dlss.dll");
+            if is_sideloaded(&ins.install_location) {
+                fs::copy(&src, &dest).map_err(|e| e.to_string())?;
+            } else if let Some(ioexe) = get_iobit_unlocker_exe() {
+                // Use IObit via PowerShell to mirror quoting behavior from v2
+                println!("Attempting to delete existing DLSS via IObit: {}", dest.display());
+                let ioexe_ps = ioexe.display().to_string().replace("'", "''");
+                let del_arglist = format!("/Delete \"{}\"", dest.display());
+                let del_arglist_ps = del_arglist.replace("'", "''");
+                let del_ps_cmd = format!(
+                    "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+                    ioexe_ps, del_arglist_ps
+                );
+                let out = Command::new("powershell.exe")
+                    .arg("-NoProfile")
+                    .arg("-ExecutionPolicy").arg("Bypass")
+                    .arg("-Command")
+                    .arg(del_ps_cmd)
+                    .output()
+                    .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
+                if !out.status.success() {
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    println!("IObit DLSS delete reported non-success for {}: {}", dest.display(), stderr);
+                }
+                println!("Copying DLSS via IObit: {} -> {}", src.display(), dest.display());
+                let copy_arglist = format!("/Copy \"{}\" \"{}\"", src.display(), dest.display());
+                let copy_arglist_ps = copy_arglist.replace("'", "''");
+                let copy_ps_cmd = format!(
+                    "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
+                    ioexe_ps, copy_arglist_ps
+                );
+                let out = Command::new("powershell.exe")
+                    .arg("-NoProfile")
+                    .arg("-ExecutionPolicy").arg("Bypass")
+                    .arg("-Command")
+                    .arg(copy_ps_cmd)
+                    .output()
+                    .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
+                if !out.status.success() {
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    return Err(format!("IObit copy failed for {}: {}", src.display(), stderr));
+                }
+                // Skipping post-copy file verification per user preference
+            } else {
+                return Err("IObit Unlocker not found; cannot update DLSS in WindowsApps".into());
+            }
+        } else {
+            println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
+        }
+    }
+    Ok(())
+}
+
+fn update_options_file(path: &Path) -> Result<(), String> {
+    if !path.exists() { return Err(format!("Options file not found: {}", path.display())); }
+    let mut content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    if content.contains("show_advanced_video_settings:0") {
+        content = content.replace("show_advanced_video_settings:0", "show_advanced_video_settings:1");
+    } else if !content.contains("show_advanced_video_settings:1") {
+        content.push_str("\nshow_advanced_video_settings:1");
+    }
+    fs::write(path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn update_options_for_selected(selected_names: Vec<String>) -> Result<(), String> {
+    let all = list_installations()?;
+    // Map by InstallLocation because the UI sends InstallLocation values
+    let map: std::collections::HashMap<_, _> = all
+        .into_iter()
+        .map(|i| (i.install_location.clone(), i))
+        .collect();
+    let com_mojang = local_app_data().join(r"Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\games\com.mojang\minecraftpe\options.txt");
+    let preview_com_mojang = local_app_data().join(r"Packages\Microsoft.MinecraftPreview_8wekyb3d8bbwe\LocalState\games\com.mojang\minecraftpe\options.txt");
+    for install_location in selected_names {
+        if let Some(ins) = map.get(&install_location) {
+            if ins.preview { update_options_file(&preview_com_mojang)?; } else { update_options_file(&com_mojang)?; }
+        } else {
+            println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn register_rtpack_extension() -> Result<(), String> {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let classes = hkcu.open_subkey_with_flags("Software\\Classes", KEY_ALL_ACCESS).map_err(|e| e.to_string())?;
+    // .rtpack -> BetterRTX.PackageFile
+    let rtpack_key = classes.create_subkey(".rtpack").map_err(|e| e.to_string())?.0;
+    rtpack_key.set_value("", &"BetterRTX.PackageFile").map_err(|e| e.to_string())?;
+    // BetterRTX.PackageFile
+    let app_key = classes.create_subkey("BetterRTX.PackageFile").map_err(|e| e.to_string())?.0;
+    app_key.set_value("", &"BetterRTX Preset").map_err(|e| e.to_string())?;
+
+    // Icon file
+    let icon_path = brtx_dir().join("rtpack.ico");
+    if !icon_path.exists() {
+        if let Ok(mut resp) = get("https://bedrock.graphics/favicon.ico") {
+            let mut f = File::create(&icon_path).map_err(|e| e.to_string())?;
+            let _ = resp.copy_to(&mut f);
+        }
+    }
+    let _ = app_key.set_value("DefaultIcon", &icon_path.to_string_lossy().to_string());
+
+    // Shell open command -> this app exe
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let shell_open = app_key.create_subkey("shell\\open\\command").map_err(|e| e.to_string())?.0;
+    let cmd = format!("\"{}\" \"%1\"", exe.display());
+    shell_open.set_value("", &cmd).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn check_iobit_unlocker() -> Result<String, String> {
+    if let Some(path) = get_iobit_unlocker_exe() {
+        Ok(format!("IObit Unlocker found at: {}", path.display()))
+    } else {
+        Err("IObit Unlocker not found. Please install IObit Unlocker to modify WindowsApps installations.".into())
+    }
+}
+
+#[tauri::command]
+fn set_iobit_path(path: String) -> Result<String, String> {
+    let path_buf = PathBuf::from(&path);
+    
+    // Validate the path exists and is an executable
+    if !path_buf.exists() {
+        return Err("The specified file does not exist.".into());
+    }
+    
+    // Check if it's IObitUnlocker.exe or a shortcut to it
+    let file_name = path_buf.file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    
+    if !file_name.contains("iobitunlocker") && !file_name.ends_with(".lnk") {
+        return Err("Please select IObitUnlocker.exe or a shortcut to it.".into());
+    }
+    
+    // Save the path to config file
+    let config_dir = brtx_dir();
+    ensure_dir(&config_dir).map_err(|e| format!("Failed to create config directory: {e}"))?;
+    let config_file = config_dir.join("iobit_path.txt");
+    fs::write(&config_file, &path).map_err(|e| format!("Failed to save IObit path: {e}"))?;
+    
+    Ok(format!("IObit Unlocker path set to: {}", path))
+}
+
+#[tauri::command]
+fn uninstall_package(restore_initial: bool) -> Result<(), String> {
+    if restore_initial {
+        let all = list_installations()?;
+        for ins in all {
+            let backup = brtx_dir().join("backup").join(&ins.friendly_name);
+            if backup.exists() {
+                let materials = vec![
+                    backup.join("RTXStub.material.bin"),
+                    backup.join("RTXPostFX.Tonemapping.material.bin"),
+                    backup.join("RTXPostFX.Bloom.material.bin"),
+                ];
+                let existing: Vec<PathBuf> = materials.into_iter().filter(|p| p.exists()).collect();
+                if !existing.is_empty() { 
+                    let dummy_pack = PackInfo {
+                        name: "Backup Restore".to_string(),
+                        uuid: "backup-restore".to_string(),
+                        stub: String::new(),
+                        tonemapping: String::new(),
+                        bloom: String::new(),
+                    };
+                    copy_shader_files(&ins.install_location, &existing, &dummy_pack)?; 
+                }
+            }
+        }
+    }
+    
+    // Clear installed presets tracking
+    let presets_file = brtx_dir().join("installed_presets.json");
+    if presets_file.exists() {
+        let _ = fs::remove_file(&presets_file);
+    }
+    
+    let _ = fs::remove_dir_all(brtx_dir());
+    Ok(())
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            list_installations,
+            get_api_packs,
+            list_presets,
+            download_and_install_pack,
+            install_from_rtpack,
+            install_materials,
+            backup_selected,
+            install_dlss_for_selected,
+            update_options_for_selected,
+            register_rtpack_extension,
+            check_iobit_unlocker,
+            set_iobit_path,
+            uninstall_package,
+            clear_cache,
+            get_cache_info,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

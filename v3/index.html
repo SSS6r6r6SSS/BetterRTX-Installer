@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BetterRTX Installer</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <!-- Top toolbar with popover API -->
+    <header class="top-toolbar">
+      <div class="toolbar-left">
+        <h1 class="app-title">BetterRTX Installer</h1>
+      </div>
+      <div class="toolbar-center">
+        <nav class="toolbar-nav">
+          <button class="nav-btn active" data-section="installations">Installations</button>
+          <button class="nav-btn" data-section="presets">Presets</button>
+          <button class="nav-btn" data-section="actions">Actions</button>
+        </nav>
+      </div>
+      <div class="toolbar-right">
+        <button id="settings-btn" class="toolbar-icon-btn" popovertarget="settings-popover" aria-label="Settings">
+          <span class="icon">⚙</span>
+        </button>
+        <button id="help-btn" class="toolbar-icon-btn" popovertarget="help-popover" aria-label="Help">
+          <span class="icon">?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Settings popover -->
+    <div id="settings-popover" popover class="settings-popover">
+      <div class="popover-header">
+        <h3>Settings</h3>
+        <button class="popover-close" popovertarget="settings-popover" popovertargetaction="hide">&times;</button>
+      </div>
+      <div class="popover-content">
+        <div class="setting-group">
+          <label>Cache Management</label>
+          <div class="setting-buttons">
+            <button id="clear-cache-popover" class="setting-btn">Clear Cache</button>
+            <button id="show-cache-info-popover" class="setting-btn">Cache Info</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>IOBit Unlocker</label>
+          <div class="setting-buttons">
+            <button id="locate-iobit-popover" class="setting-btn">Locate IOBit</button>
+            <button id="check-iobit-popover" class="setting-btn">Check Status</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label>Advanced</label>
+          <div class="setting-buttons">
+            <button id="register-rtpack-popover" class="setting-btn">Register .rtpack</button>
+            <button id="uninstall-popover" class="setting-btn danger">Uninstall</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help popover -->
+    <div id="help-popover" popover class="help-popover">
+      <div class="popover-header">
+        <h3>Help & Information</h3>
+        <button class="popover-close" popovertarget="help-popover" popovertargetaction="hide">&times;</button>
+      </div>
+      <div class="popover-content">
+        <div class="help-section">
+          <h4>Getting Started</h4>
+          <p>1. Select your Minecraft installation(s)</p>
+          <p>2. Choose a preset from the available options</p>
+          <p>3. Click "Install" to apply the preset</p>
+        </div>
+        <div class="help-section">
+          <h4>Requirements</h4>
+          <p>• NVIDIA RTX GPU (RTX 2060 or better)</p>
+          <p>• IOBit Unlocker (for WindowsApps installations)</p>
+          <p>• Administrator privileges may be required</p>
+        </div>
+        <div class="help-section">
+          <h4>Support</h4>
+          <p>Visit <a href="https://bedrock.graphics" target="_blank">bedrock.graphics</a> for more information</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-layout">
+      <!-- Mobile menu button -->
+      <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <!-- Slideout sidepanel for actions -->
+      <aside id="actions-sidepanel" class="actions-sidepanel">
+        <div class="sidepanel-header">
+          <h2>Actions</h2>
+          <button id="close-sidepanel" class="close-sidepanel" aria-label="Close menu">&times;</button>
+        </div>
+        <div class="sidepanel-content">
+          <div class="actions-list">
+            <button id="install-rtpack" class="action-btn">Install .rtpack File</button>
+            <button id="install-materials" class="action-btn">Install Material Files</button>
+            <button id="backup-selected" class="action-btn">Backup Selected</button>
+            <button id="install-dlss" class="action-btn">Update DLSS</button>
+            <button id="update-options" class="action-btn">Fix Options</button>
+            <button id="register-rtpack" class="action-btn">Register .rtpack</button>
+            <button id="locate-iobit" class="action-btn">Locate IOBit</button>
+            <button id="uninstall" class="action-btn danger">Uninstall</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Overlay for mobile menu -->
+      <div id="sidepanel-overlay" class="sidepanel-overlay"></div>
+
+      <main class="main-content">
+        <header class="app-header">
+          <h1>BetterRTX Installer</h1>
+          <p>Minecraft RTX Preset Manager</p>
+        </header>
+
+        <section id="installations-section" class="installations-container">
+          <!-- Navigation toolbar for installations -->
+          <div class="section-toolbar">
+            <div class="toolbar-title">
+              <h2>Minecraft Installations</h2>
+              <span id="installations-count" class="item-count">0 found</span>
+            </div>
+            <div class="toolbar-actions">
+              <button id="refresh-installations" class="toolbar-btn">
+                <span class="btn-icon">⟳</span>
+                Refresh
+              </button>
+              <button id="show-actions" class="toolbar-btn mobile-only">
+                <span class="btn-icon">⚙</span>
+                Actions
+              </button>
+            </div>
+          </div>
+          <div id="installations-list" class="installations-grid"></div>
+        </section>
+
+        <section id="presets-section" class="presets-container">
+          <div class="section-toolbar">
+            <div class="toolbar-title">
+              <h2>Available Presets</h2>
+              <span id="presets-count" class="item-count">0 loaded</span>
+            </div>
+            <div class="toolbar-actions">
+              <button id="refresh-presets" class="toolbar-btn">
+                <span class="btn-icon">⟳</span>
+                Refresh
+              </button>
+              <button id="force-refresh-presets" class="toolbar-btn">
+                <span class="btn-icon">🔄</span>
+                Force Refresh
+              </button>
+              <button id="clear-cache" class="toolbar-btn">
+                <span class="btn-icon">🗑</span>
+                Clear Cache
+              </button>
+              <button id="show-cache-info" class="toolbar-btn">
+                <span class="btn-icon">ℹ</span>
+                Cache Info
+              </button>
+            </div>
+          </div>
+          <div id="presets-list" class="presets-grid"></div>
+        </section>
+
+        <!-- Desktop actions section (hidden on mobile) -->
+        <section id="actions-section" class="actions-section desktop-only">
+          <h2>Actions</h2>
+          <div class="actions-grid">
+            <button id="install-rtpack-desktop" class="action-btn">Install .rtpack File</button>
+            <button id="install-materials-desktop" class="action-btn">Install Material Files</button>
+            <button id="backup-selected-desktop" class="action-btn">Backup Selected</button>
+            <button id="install-dlss-desktop" class="action-btn">Update DLSS</button>
+            <button id="update-options-desktop" class="action-btn">Fix Options</button>
+            <button id="register-rtpack-desktop" class="action-btn">Register .rtpack</button>
+            <button id="locate-iobit-desktop" class="action-btn">Locate IOBit</button>
+            <button id="uninstall-desktop" class="action-btn danger">Uninstall</button>
+          </div>
+        </section>
+
+        <section id="drag-drop-section">
+          <div id="drop-zone" class="drop-zone">
+            <p>Drop .rtpack files or material files here</p>
+          </div>
+        </section>
+
+        <section id="status-section">
+          <div id="status" class="status"></div>
+          <div id="progress-container" class="progress-container" style="display: none;">
+            <div id="progress-bar" class="progress-bar"></div>
+          </div>
+        </section>
+
+        <section id="console-section">
+          <div class="console-header" id="console-toggle">
+            <h3>Console Output</h3>
+            <span id="console-arrow" class="console-arrow">▼</span>
+          </div>
+          <div id="console-panel" class="console-panel collapsed">
+            <div id="console-output" class="console-output"></div>
+            <button id="clear-console" class="console-clear-btn">Clear</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
