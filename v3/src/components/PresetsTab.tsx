@@ -49,28 +49,25 @@ export default function PresetsTab() {
       );
     }
 
-    // Apply category filter
+    // Apply version filter
     if (selectedFilter !== "all") {
       filtered = filtered.filter((preset) => {
-        switch (selectedFilter) {
-          case "rtx":
-            return (
-              preset.name.toLowerCase().includes("rtx") ||
-              preset.stub.toLowerCase().includes("rtx")
-            );
-          case "vanilla":
-            return (
-              preset.name.toLowerCase().includes("vanilla") ||
-              preset.stub.toLowerCase().includes("vanilla")
-            );
-          case "enhanced":
-            return (
-              preset.name.toLowerCase().includes("enhanced") ||
-              preset.name.toLowerCase().includes("hd")
-            );
-          default:
-            return true;
+        // Extract BetterRTX version from preset name
+        const versionMatch = preset.name.match(/BetterRTX\s+(\d+\.\d+(?:\.\d+)?)/i);
+        
+        if (selectedFilter === "other") {
+          // Show presets that don't have a BetterRTX version pattern
+          return !versionMatch;
         }
+        
+        if (!versionMatch) {
+          return false;
+        }
+        
+        const presetVersion = versionMatch[1];
+        
+        // Match major.minor version (e.g., "1.4" matches "1.4.0", "1.4.1", etc.)
+        return presetVersion.startsWith(selectedFilter);
       });
     }
 
@@ -102,12 +99,13 @@ export default function PresetsTab() {
           <select
             value={selectedFilter}
             onChange={(e) => setSelectedFilter(e.target.value)}
-            className="px-3 py-2 bg-app-panel border border-app-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent"
+            className="px-3 py-2 bg-app-panel border border-app-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent cursor-pointer"
           >
-            <option value="all">{t("filter_all", "All")}</option>
-            <option value="rtx">{t("filter_rtx", "RTX")}</option>
-            <option value="vanilla">{t("filter_vanilla", "Vanilla")}</option>
-            <option value="enhanced">{t("filter_enhanced", "Enhanced")}</option>
+            <option disabled value="">{t("filter_select", "Select a version")}</option>
+            <option value="all">{t("filter_any_version", "Any Version")}</option>
+            <option value="1.4">{t("filter_v14", "BetterRTX 1.4")}</option>
+            <option value="1.3">{t("filter_v13", "BetterRTX 1.3")}</option>
+            <option value="1.2">{t("filter_v12", "BetterRTX 1.2")}</option>
           </select>
         </div>
       </div>
