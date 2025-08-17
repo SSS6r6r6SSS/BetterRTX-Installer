@@ -1,7 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { cx } from "classix";
-import Button from "./ui/Button";
+import Button from "../ui/Button";
+import BlockPath from "../ui/BlockPath";
 
 export interface PackInfo {
   name: string;
@@ -70,21 +71,15 @@ export const PresetCard: React.FC<PresetCardProps> = ({
           <dl>
             <dt>Stub</dt>
             <dd>
-              <div className="preset-stub-container">
-                <a className="preset-stub-link" href={preset.stub} target="_blank" rel="noopener noreferrer">{preset.stub}</a>
-              </div>
+              <BlockPath path={preset.stub} href={preset.stub} />
             </dd>
             <dt>Tonemapping</dt>
             <dd>
-              <div className="preset-stub-container">
-                <a className="preset-stub-link" href={preset.tonemapping} target="_blank" rel="noopener noreferrer">{preset.tonemapping}</a>
-              </div>
+              <BlockPath path={preset.tonemapping} href={preset.tonemapping} />
             </dd>
             <dt>Bloom</dt>
             <dd>
-              <div className="preset-stub-container">
-                <a className="preset-stub-link" href={preset.bloom} target="_blank" rel="noopener noreferrer">{preset.bloom}</a>
-              </div>
+              <BlockPath path={preset.bloom} href={preset.bloom} />
             </dd>
           </dl>
         </div>

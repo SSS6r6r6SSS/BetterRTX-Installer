@@ -353,6 +353,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "brtx-installer"
+version = "3.0.0"
+dependencies = [
+ "chrono",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "url",
+ "walkdir",
+ "winreg 0.52.0",
+ "zip",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4688,24 +4706,6 @@ dependencies = [
  "js-sys",
  "serde",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "v3"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "reqwest",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "url",
- "walkdir",
- "winreg 0.52.0",
- "zip",
 ]
 
 [[package]]

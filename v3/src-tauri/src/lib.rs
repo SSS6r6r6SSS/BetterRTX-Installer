@@ -11,6 +11,7 @@ use winreg::enums::*;
 use winreg::RegKey;
 use std::collections::HashMap;
 use tauri::Emitter;
+use tauri_plugin_dialog::DialogExt;
 use url::Url;
 
 const BRTX_DIR_NAME: &str = "graphics.bedrock";
@@ -480,6 +481,33 @@ fn write_json_file<T: Serialize>(p: &Path, val: &T) -> Result<(), String> {
     fs::write(p, s).map_err(|e| e.to_string())
 }
 
+fn find_launcher_installs(
+    installations: &mut Vec<Installation>,
+    launcher_name: &str,
+    base_path_env: &str,
+    sub_path: &str,
+) {
+    let Ok(app_data) = std::env::var(base_path_env) else { return };
+    let launcher_path = std::path::Path::new(&app_data).join(sub_path);
+    let Ok(entries) = std::fs::read_dir(launcher_path) else { return };
+
+    let new_installations = entries
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().map_or(false, |ft| ft.is_dir()))
+        .filter_map(|entry| {
+            let path = entry.path();
+            let version_name = path.file_name()?.to_str()?;
+            Some(Installation {
+                friendly_name: format!("{} - {}", launcher_name, version_name),
+                install_location: path.to_str()?.to_string(),
+                preview: false,
+                installed_preset: None,
+            })
+        });
+
+    installations.extend(new_installations);
+}
+
 #[tauri::command]
 fn list_installations() -> Result<Vec<Installation>, String> {
     let ps = r#"
@@ -498,14 +526,26 @@ fn list_installations() -> Result<Vec<Installation>, String> {
     
     let mut installations: Vec<Installation> = {
         let parsed: Result<Vec<Installation>, _> = serde_json::from_str(out_trim);
-        if let Ok(v) = parsed { 
-            v 
+        if let Ok(v) = parsed {
+            v
         } else {
-            // sometimes a single object is returned
-            let single: Installation = serde_json::from_str(out_trim).map_err(|e| e.to_string())?;
-            vec![single]
+            let parsed_single: Result<Installation, _> = serde_json::from_str(out_trim);
+            if let Ok(i) = parsed_single { vec![i] } else { vec![] }
         }
     };
+
+    find_launcher_installs(
+        &mut installations,
+        "BedrockLauncher",
+        "APPDATA",
+        "BedrockLauncher/data/versions",
+    );
+    find_launcher_installs(
+        &mut installations,
+        "MCLauncher",
+        "LOCALAPPDATA",
+        "MCLauncher/installs",
+    );
     
     // Add installed preset information to each installation
     for installation in &mut installations {
@@ -1164,6 +1204,48 @@ fn download_creator_settings(settings_hash: String, selected_names: Vec<String>)
 }
 
 #[tauri::command]
+fn validate_minecraft_path(path: String) -> Result<bool, String> {
+    let minecraft_path = Path::new(&path);
+    
+    // Check if path exists
+    if !minecraft_path.exists() {
+        return Ok(false);
+    }
+    
+    // Check for common Minecraft files/directories
+    let required_paths = [
+        "data",
+        "AppxManifest.xml", // For UWP apps
+        "Minecraft.exe",    // For some installations
+    ];
+    
+    // At least one of these should exist for a valid Minecraft installation
+    let has_minecraft_indicators = required_paths.iter().any(|&p| {
+        minecraft_path.join(p).exists()
+    });
+    
+    // Also check for materials directory structure
+    let materials_dir = minecraft_path.join("data").join("renderer").join("materials");
+    let has_materials_structure = materials_dir.exists() || minecraft_path.join("data").exists();
+    
+    Ok(has_minecraft_indicators || has_materials_structure)
+}
+
+#[tauri::command]
+fn open_folder_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let result = app
+        .dialog()
+        .file()
+        .set_title("Select Minecraft Installation Folder")
+        .blocking_pick_folder();
+
+    match result {
+        Some(path) => Ok(Some(path.to_string())),
+        None => Ok(None),
+    }
+}
+
+#[tauri::command]
 fn uninstall_package(restore_initial: bool) -> Result<(), String> {
     if restore_initial {
         let all = list_installations()?;
@@ -1240,6 +1322,8 @@ pub fn run() {
             handle_deep_link,
             download_preset_by_uuid,
             download_creator_settings,
+            validate_minecraft_path,
+            open_folder_dialog,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

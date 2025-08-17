@@ -1,3 +1,5 @@
+import { Circle, CircleMinus } from "lucide-react";
+
 interface SwitchProps {
     checked: boolean;
     onCheckedChange: (checked: boolean) => void;
@@ -46,10 +48,10 @@ export default function Switch({
                 }}
             >
                 <div className="switch__track-background">
-                    ON
+                    <CircleMinus className="size-6 fill-none rotate-90" />
                 </div>
                 <div className="switch__track-background">
-                    OFF
+                    <Circle className="size-6 fill-none" />
                 </div>
                 
                 <div className="switch__handle">

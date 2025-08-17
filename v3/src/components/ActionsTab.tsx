@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 export default function ActionsTab() {
     const { t } = useTranslation();
     const { addMessage } = useStatusStore();
-    const { selectedInstallations, installRTX, installMaterials, backupSupportFiles } = useAppStore();
+    const { selectedInstallations, installRTX, updateOptions, backupSupportFiles } = useAppStore();
 
     const handleActionClick = (actionFn: (installPath: string) => Promise<void>) => {
         if (selectedInstallations.size === 0) {
@@ -56,13 +56,13 @@ export default function ActionsTab() {
                 </button>
                 <button
                     className="action-btn p-4 rounded-lg border text-left hover:bg-opacity-80 transition-colors bg-app-panel border-app-border"
-                    onClick={() => handleActionClick(installMaterials)}
+                    onClick={() => handleActionClick(updateOptions)}
                 >
                     <h3 className="font-semibold mb-2">
-                        {t("action_install_materials_title")}
+                        {t("action_update_options_title")}
                     </h3>
                     <p className="text-sm opacity-75">
-                        {t("action_install_materials_desc")}
+                        {t("action_update_options_desc")}
                     </p>
                 </button>
                 <button

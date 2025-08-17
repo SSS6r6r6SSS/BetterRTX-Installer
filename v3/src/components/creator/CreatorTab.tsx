@@ -1,27 +1,19 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import Button from "./ui/Button";
-import { useAppStore } from "../store/appStore";
-import { useStatusStore } from "../store/statusStore";
+import Button from "../ui/Button";
+import { useAppStore } from "../../store/appStore";
+import { useStatusStore } from "../../store/statusStore";
+import InstallationInstanceModal from "../installations/InstallationInstanceModal";
 
 export default function CreatorTab() {
-  const { selectedInstallations } = useAppStore();
+  const { installations } = useAppStore();
   const { addMessage } = useStatusStore();
   const [settingsHash, setSettingsHash] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!settingsHash.trim()) {
-      addMessage({
-        message: "Please enter a settings hash",
-        type: "error",
-      });
-      return;
-    }
-
-    if (selectedInstallations.size === 0) {
+  const handleInstall = async (selectedNames: string[]) => {
+    if (selectedNames.length === 0) {
       addMessage({
         message: "Please select at least one installation",
         type: "error",
@@ -30,8 +22,8 @@ export default function CreatorTab() {
     }
 
     setIsProcessing(true);
+    setIsModalOpen(false);
     try {
-      const selectedNames = Array.from(selectedInstallations);
       await invoke("download_creator_settings", {
         settingsHash: settingsHash.trim(),
         selectedNames,
@@ -51,6 +43,20 @@ export default function CreatorTab() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!settingsHash.trim()) {
+      addMessage({
+        message: "Please enter a settings hash",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsModalOpen(true);
   };
 
   const handleHashChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,7 +92,7 @@ export default function CreatorTab() {
                     id="settings-hash"
                     type="text"
                     className="field__input font-mono"
-                    placeholder="Enter settings hash (e.g., 1fc884a5b6ef2a19b2817b39397512987c7fe0890524631d2448927233fcebb5)"
+                    placeholder="Enter settings hash"
                     value={settingsHash}
                     onChange={handleHashChange}
                     disabled={isProcessing}
@@ -97,26 +103,11 @@ export default function CreatorTab() {
                 </p>
               </div>
 
-              <div className="installation-status">
-                <p className="text-sm font-medium mb-2">
-                  Selected installations ({selectedInstallations.size}):
-                </p>
-                {selectedInstallations.size === 0 ? (
-                  <p className="text-sm text-app-muted italic">
-                    No installations selected. Please go to the Installations tab and select target installations.
-                  </p>
-                ) : (
-                  <div className="text-sm text-app-muted">
-                    {selectedInstallations.size} installation{selectedInstallations.size !== 1 ? 's' : ''} selected
-                  </div>
-                )}
-              </div>
-
               <div className="form-actions">
                 <Button
                   type="submit"
                   theme="primary"
-                  disabled={isProcessing || !isValidHash || selectedInstallations.size === 0}
+                  disabled={isProcessing || !isValidHash}
                 >
                   {isProcessing ? "Installing..." : "Install Creator Settings"}
                 </Button>
@@ -125,6 +116,14 @@ export default function CreatorTab() {
           </div>
         </div>
       </div>
+      <InstallationInstanceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        installations={installations}
+        presetName={`settings ${settingsHash.slice(0, 8)}...`}
+        onInstall={handleInstall}
+        isInstalling={isProcessing}
+      />
     </section>
   );
 }

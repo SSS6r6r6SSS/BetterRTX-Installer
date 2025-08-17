@@ -39,13 +39,15 @@ interface AppState {
   setToolbarOpen: (open: boolean) => void;
   addConsoleOutput: (message: string) => void;
   clearConsole: () => void;
+  addInstallation: (installation: Installation) => void;
+  removeInstallation: (path: string) => void;
 
   // Async actions
   refreshInstallations: () => Promise<void>;
   refreshPresets: (forceRefresh?: boolean) => Promise<void>;
   clearCache: () => Promise<void>;
   installRTX: (installPath: string) => Promise<void>;
-  installMaterials: (installPath: string) => Promise<void>;
+  updateOptions: (installPath: string) => Promise<void>;
   backupSupportFiles: (installPath: string) => Promise<void>;
 }
 
@@ -75,6 +77,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   clearConsole: () => set({ consoleOutput: [] }),
+
+  addInstallation: (installation) => {
+    set((state) => ({
+      installations: [...state.installations, installation]
+    }));
+  },
+
+  removeInstallation: (path) => {
+    set((state) => ({
+      installations: state.installations.filter(inst => inst.InstallLocation !== path),
+      selectedInstallations: new Set([...state.selectedInstallations].filter(p => p !== path))
+    }));
+  },
 
   // Async actions
   refreshInstallations: async () => {
@@ -132,7 +147,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  installMaterials: async (installPath) => {
+  updateOptions: async (installPath) => {
     const { addConsoleOutput } = get();
     try {
       addConsoleOutput(`Updating options for ${installPath}...`);

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "BetterRTX",
+  "productName": "BetterRTX Installer",
   "version": "3.0.0",
   "identifier": "graphics.bedrock.brtx",
   "build": {
@@ -15,7 +15,8 @@
       {
         "title": "BetterRTX Installer",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "dragDropEnabled": true
       }
     ],
     "security": {

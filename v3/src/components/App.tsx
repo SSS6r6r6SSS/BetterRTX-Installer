@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 
-import { InstallationCard } from "./InstallationCard";
 import { StatusBarContainer } from "./StatusBar";
 import { ConsolePanel } from "./ConsolePanel";
 import { RtpackDialog } from "./RtpackDialog";
@@ -11,7 +10,11 @@ import { useAppStore } from "../store/appStore";
 import AppHeader from "./AppHeader";
 import ActionsTab from "./ActionsTab";
 import PresetsTab from "./PresetsTab";
-import CreatorTab from "./CreatorTab";
+import CreatorTab from "./creator/CreatorTab";
+import InstallationsToolbar from "./installations/InstallationsToolbar";
+import { SideNav } from "./ui/SideNav";
+import InstallationNav from "./installations/InstallationNav";
+import InstallationsTab from "./installations/InstallationsTab";
 
 export const App: React.FC = () => {
   const { t } = useTranslation();
@@ -20,11 +23,8 @@ export const App: React.FC = () => {
   const [deepLinkDialogOpen, setDeepLinkDialogOpen] = useState(false);
   const [deepLinkUrl, setDeepLinkUrl] = useState("");
   const {
-    installations,
-    selectedInstallations,
     consoleOutput,
     activeTab,
-    setSelectedInstallations,
     clearConsole,
     refreshInstallations,
     refreshPresets,
@@ -77,95 +77,68 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleInstallationSelection = (path: string, selected: boolean) => {
-    const newSet = new Set(selectedInstallations);
-    if (selected) {
-      newSet.add(path);
-    } else {
-      newSet.delete(path);
-    }
-    setSelectedInstallations(newSet);
-  };
 
 
   return (
-    <div className="min-h-screen bg-app-bg text-app-fg">
-      {/* Top toolbar with popover API */}
+    <div className="app">
+      {/* Top Header */}
       <AppHeader />
+      <div className="app-with-sidebar">
+        {/* Sidebar Navigation */}
+        <aside className="app-sidebar">
+          <SideNav>
+            <InstallationNav />
+          </SideNav>
+        </aside>
 
-      <StatusBarContainer />
+        {/* Main Application Area */}
+        <div className="app-main">
+          <StatusBarContainer />
 
-      {/* Main content */}
-      <main className="p-4 pb-32">
-        {/* Tab Content */}
-        <div className="tab-content">
-          {activeTab === "installations" && (
-            <section className="installations-container">
-              <div className="section-toolbar flex justify-between items-center mb-4">
-                <div className="toolbar-title">
-                  <h2 className="text-lg font-semibold">
-                    {t("installations_title")}
-                  </h2>
-                  <span className="text-sm opacity-75">
-                    {t("installations_found_count", {
-                      count: installations.length,
-                    })}
-                  </span>
-                </div>
-              </div>
-              <div className="installations-list grid gap-4 sm:grid-cols-2">
-                {installations.length > 0 ? (
-                  installations.map((installation) => (
-                    <InstallationCard
-                      key={installation.InstallLocation}
-                      installation={installation}
-                      selected={selectedInstallations.has(
-                        installation.InstallLocation
-                      )}
-                      onSelectionChange={handleInstallationSelection}
-                    />
-                  ))
-                ) : (
-                  <div className="empty-state text-center py-8">
-                    <p>{t("installations_none_found")}</p>
-                  </div>
+          {/* Main Content Area */}
+          <main className="app-content">
+            <div className="main-content">
+              {/* Tab Content */}
+              <div className="tab-content">
+                {activeTab === "installations" && (
+                  <InstallationsTab />
+                )}
+
+                {activeTab === "presets" && (
+                  <PresetsTab />
+                )}
+
+                {activeTab === "actions" && (
+                  <ActionsTab />
+                )}
+
+                {activeTab === "creator" && (
+                  <CreatorTab />
                 )}
               </div>
-            </section>
-          )}
+            </div>
+          </main>
 
-          {activeTab === "presets" && (
-            <PresetsTab />
-          )}
-
-          {activeTab === "actions" && (
-            <ActionsTab />
-          )}
-
-          {activeTab === "creator" && (
-            <CreatorTab />
-          )}
+          {/* Fixed Console Panel at bottom */}
+          <div className="fixed bottom-0 left-0 right-0 z-50">
+            <ConsolePanel output={consoleOutput} onClear={clearConsole} />
+          </div>
         </div>
-      </main>
 
-      {/* Fixed Console Panel at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
-        <ConsolePanel output={consoleOutput} onClear={clearConsole} />
+        {/* RTpack Dialog */}
+        <RtpackDialog
+          isOpen={rtpackDialogOpen}
+          rtpackPath={rtpackPath}
+          onClose={() => setRtpackDialogOpen(false)}
+        />
+
+        {/* Deep Link Dialog */}
+        <DeepLinkDialog
+          isOpen={deepLinkDialogOpen}
+          deepLinkUrl={deepLinkUrl}
+          onClose={() => setDeepLinkDialogOpen(false)}
+        />
       </div>
-
-      {/* RTpack Dialog */}
-      <RtpackDialog
-        isOpen={rtpackDialogOpen}
-        rtpackPath={rtpackPath}
-        onClose={() => setRtpackDialogOpen(false)}
-      />
-
-      {/* Deep Link Dialog */}
-      <DeepLinkDialog
-        isOpen={deepLinkDialogOpen}
-        deepLinkUrl={deepLinkUrl}
-        onClose={() => setDeepLinkDialogOpen(false)}
-      />
     </div>
   );
 };

@@ -14,6 +14,7 @@
   "tab_installations": "Installations",
   "tab_presets": "Presets",
   "tab_actions": "Actions",
+  "navigation": "Navigation",
   "toolbar_options_label": "Toolbar options",
   "installations_found_count": "{{count}} found",
   "installations_none_found": "No Minecraft installations found",
@@ -39,5 +40,7 @@
   "cancel": "Cancel",
   "install": "Install",
   "installing": "Installing...",
-  "status_installing_rtpack": "Installing RTpack file..."
+  "status_installing_rtpack": "Installing RTpack file...",
+  "current_preset": "Current preset: {{name}}",
+  "no_preset_installed": "No preset installed"
 }
