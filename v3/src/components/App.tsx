@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 import { StatusBarContainer } from "./StatusBar";
 import { ConsolePanel } from "./ConsolePanel";
@@ -13,12 +14,14 @@ import CreatorTab from "./creator/CreatorTab";
 import { SideNav } from "./ui/SideNav";
 import InstallationNav from "./installations/InstallationNav";
 import InstallationsTab from "./installations/InstallationsTab";
+import DropzoneIndicator from "./ui/DropzoneIndicator";
 
 export const App: React.FC = () => {
   const [rtpackDialogOpen, setRtpackDialogOpen] = useState(false);
   const [rtpackPath, setRtpackPath] = useState("");
   const [deepLinkDialogOpen, setDeepLinkDialogOpen] = useState(false);
   const [deepLinkUrl, setDeepLinkUrl] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const {
     consoleOutput,
     activeTab,
@@ -56,26 +59,48 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Handle file drops
+  // Handle drag-n-drop indicator and file drops
   useEffect(() => {
-    const unlisten = listen<string[]>("tauri://file-drop", (event) => {
-      const paths = event.payload;
-      for (const path of paths) {
-        if (path.toLowerCase().endsWith(".rtpack")) {
-          setRtpackPath(path);
-          setRtpackDialogOpen(true);
-          break; // Only handle the first .rtpack file
+    const setupDragDropListener = async () => {
+      const webview = getCurrentWebview();
+      const unlisten = await webview.onDragDropEvent((event) => {
+        if (event.payload.type === 'enter') {
+          setIsDragging(true);
+        } else if (event.payload.type === 'drop') {
+          setIsDragging(false);
+          // Handle the dropped files
+          const paths = event.payload.paths || [];
+          for (const path of paths) {
+            if (path.toLowerCase().endsWith(".rtpack")) {
+              setRtpackPath(path);
+              setRtpackDialogOpen(true);
+              break; // Only handle the first .rtpack file
+            }
+          }
+        } else if (event.payload.type === 'leave') {
+          setIsDragging(false);
         }
-      }
+      });
+
+      return unlisten;
+    };
+
+    let unlisten: (() => void) | undefined;
+    setupDragDropListener().then((fn) => {
+      unlisten = fn;
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      if (unlisten) {
+        unlisten();
+      }
     };
   }, []);
 
   return (
     <div className="app">
+      <DropzoneIndicator isDragging={isDragging} />
+
       {/* Top Header */}
       <AppHeader />
       <div className="app-with-sidebar">

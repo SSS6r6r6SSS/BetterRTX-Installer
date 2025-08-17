@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
+import { cx } from "classix";
+import Modal from "./ui/Modal";
+import Button from "./ui/Button";
 import { useAppStore } from "../store/appStore";
 import { useStatusStore } from "../store/statusStore";
 
@@ -68,7 +71,7 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
     }
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAll = (): void => {
     if (selectedInstallations.size === installations.length) {
       setSelectedInstallations(new Set());
     } else {
@@ -78,78 +81,70 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  const handleClose = (): void => {
+    setSelectedInstallations(new Set());
+    onClose();
+  };
 
   const fileName = rtpackPath.split(/[\\\/]/).pop() || rtpackPath;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {t("rtpack_dialog_title")}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t("rtpack_dialog_title")}
+      className="installation-modal"
+    >
+      <div className="installation-modal__content">
+        <p className="installation-modal__description">
+          {t("rtpack_dialog_description")}
+        </p>
+
+        <div className="panel mb-4">
+          <div className="panel__body">
+            <p className="text-sm font-medium break-all font-mono">
+              {fileName}
+            </p>
+          </div>
+        </div>
+
+        <div className="installation-modal__controls">
+          <Button
+            className="btn btn--secondary"
+            onClick={handleSelectAll}
             disabled={isInstalling}
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+            {selectedInstallations.size === installations.length
+              ? t("deselect_all")
+              : t("select_all")}
+          </Button>
+          <span className="installation-modal__count">
+            {t("selected_count", {
+              selected: selectedInstallations.size,
+              total: installations.length,
+            })}
+          </span>
         </div>
 
-        <div className="mb-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-            {t("rtpack_dialog_description")}
-          </p>
-          <p className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 p-2 rounded">
-            {fileName}
-          </p>
-        </div>
-
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              {t("select_minecraft_instances")}
-            </h3>
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-              disabled={isInstalling}
-            >
-              {selectedInstallations.size === installations.length
-                ? t("deselect_all")
-                : t("select_all")}
-            </button>
+        {installations.length === 0 ? (
+          <div className="empty-state">
+            <p>{t("no_minecraft_installations")}</p>
           </div>
-
-          {installations.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-gray-500 dark:text-gray-400">
-                {t("no_minecraft_installations")}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {installations.map((installation) => (
-                <label
-                  key={installation.InstallLocation}
-                  className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                >
+        ) : (
+          <div className="installation-modal__list">
+            {installations.map((installation) => (
+              <div
+                key={installation.InstallLocation}
+                className={cx(
+                  "installation-item",
+                  selectedInstallations.has(installation.InstallLocation) &&
+                    "installation-item--selected"
+                )}
+              >
+                <label className="installation-item__label">
                   <input
                     type="checkbox"
+                    className="installation-item__checkbox"
                     checked={selectedInstallations.has(
                       installation.InstallLocation
                     )}
@@ -157,41 +152,51 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
                       handleInstallationToggle(installation.InstallLocation)
                     }
                     disabled={isInstalling}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                   />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="installation-item__info">
+                    <span className="installation-item__name">
                       {installation.FriendlyName}
-                    </p>
+                    </span>
+                    <span className="installation-item__path">
+                      {installation.InstallLocation}
+                    </span>
                     {installation.Preview && (
-                      <span className="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded-full">
+                      <span className="installation-item__badge">
                         {t("preview")}
+                      </span>
+                    )}
+                    {installation.installed_preset && (
+                      <span className="installation-item__preset">
+                        {t("current_preset")}:{" "}
+                        {installation.installed_preset.name}
                       </span>
                     )}
                   </div>
                 </label>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
+        <div className="installation-modal__actions">
+          <Button
+            className="btn btn--secondary"
+            onClick={handleClose}
             disabled={isInstalling}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-md disabled:opacity-50"
           >
             {t("cancel")}
-          </button>
-          <button
+          </Button>
+          <Button
+            className="btn btn--primary"
             onClick={handleInstall}
-            disabled={isInstalling || selectedInstallations.size === 0}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 rounded-md disabled:opacity-50"
+            disabled={selectedInstallations.size === 0 || isInstalling}
           >
-            {isInstalling ? t("installing") : t("install")}
-          </button>
+            {isInstalling
+              ? t("installing")
+              : t("install_to_selected", { count: selectedInstallations.size })}
+          </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
