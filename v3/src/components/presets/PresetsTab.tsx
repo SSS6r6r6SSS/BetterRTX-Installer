@@ -1,8 +1,8 @@
-import { PresetCard } from "./presets/PresetCard";
+import { PresetCard } from "./PresetCard";
 import { useTranslation } from "react-i18next";
-import { useAppStore } from "../store/appStore";
-import { usePresetsStore } from "../store/presetsStore";
-import InstallationInstanceModal from "./installations/InstallationInstanceModal";
+import { useAppStore } from "../../store/appStore";
+import { usePresetsStore } from "../../store/presetsStore";
+import InstallationInstanceModal from "../installations/InstallationInstanceModal";
 import { useState, useMemo } from "react";
 
 export default function PresetsTab() {

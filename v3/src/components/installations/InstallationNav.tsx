@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import PresetIcon from "../PresetIcon";
+import PresetIcon from "../presets/PresetIcon";
 import { useAppStore } from "../../store/appStore";
 
 export default function InstallationNav() {

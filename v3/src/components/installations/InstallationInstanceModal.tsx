@@ -4,6 +4,7 @@ import { cx } from "classix";
 import Modal from "../ui/Modal";
 import Button from "../ui/Button";
 import { Installation } from "../../store/appStore";
+import Switch from "../ui/Switch";
 
 interface InstallationInstanceModalProps {
   isOpen: boolean;
@@ -100,16 +101,14 @@ const InstallationInstanceModal: React.FC<InstallationInstanceModalProps> = ({
               )}
             >
               <label className="installation-item__label">
-                <input
-                  type="checkbox"
-                  className="installation-item__checkbox"
+                <Switch
                   checked={selectedInstallations.has(
                     installation.InstallLocation
                   )}
-                  onChange={() =>
+                  onCheckedChange={() =>
                     handleInstallationToggle(installation.InstallLocation)
                   }
-                  disabled={isInstalling}
+                  label={t("install_preset_to_instance")}
                 />
                 <div className="installation-item__info">
                   <span className="installation-item__name">

@@ -10,6 +10,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.5),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   10% {
     fill: oklch(0.882 0.059 254.128);
     border-color: oklch(0.932 0.032 255.585);
@@ -17,6 +18,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.75),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   20% {
     fill: oklch(0.894 0.057 293.283);
     border-color: oklch(0.943 0.029 294.588);
@@ -24,6 +26,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.85),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   30% {
     fill: oklch(0.892 0.058 10.001);
     border-color: oklch(0.941 0.03 12.58);
@@ -31,6 +34,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.75),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   40% {
     fill: oklch(0.885 0.062 18.334);
     border-color: oklch(0.936 0.032 17.717);
@@ -38,6 +42,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.65),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   50% {
     fill: oklch(0.901 0.076 70.697);
     border-color: oklch(0.954 0.038 75.164);
@@ -45,6 +50,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.75),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   60% {
     fill: oklch(0.924 0.12 95.746);
     border-color: oklch(0.962 0.059 95.617);
@@ -52,6 +58,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.5),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   70% {
     fill: oklch(0.945 0.129 101.54);
     border-color: oklch(0.973 0.071 103.193);
@@ -59,6 +66,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.65),
       0 2px 4px -2px rgba(0, 0, 0, 0.5);
   }
+
   80% {
     fill: oklch(0.938 0.127 124.321);
     border-color: oklch(0.967 0.067 122.328);
@@ -66,6 +74,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.85),
       0 2px 4px -2px rgba(0, 0, 0, 0.85);
   }
+
   90% {
     fill: oklch(0.905 0.093 164.15);
     border-color: oklch(0.95 0.052 163.051);
@@ -73,6 +82,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.75),
       0 2px 4px -2px rgba(0, 0, 0, 0.75);
   }
+
   100% {
     fill: oklch(0.917 0.08 205.041);
     border-color: oklch(0.956 0.045 203.388);
@@ -83,10 +93,21 @@
 }
 
 /* Custom utilities - must be at top level, not nested in @layer */
-@utility panel { @apply rounded-lg border shadow-sm bg-app-panel border-app-border; }
-@utility panel__header { @apply border-b px-4 py-3 border-app-border; }
-@utility panel__title { @apply text-base font-semibold; }
-@utility panel__body { @apply p-4; }
+@utility panel {
+  @apply rounded-lg border shadow-sm bg-app-panel border-app-border;
+}
+
+@utility panel__header {
+  @apply border-b px-4 py-3 border-app-border;
+}
+
+@utility panel__title {
+  @apply text-base font-semibold;
+}
+
+@utility panel__body {
+  @apply p-4;
+}
 
 @utility button {
   @apply btn;
@@ -96,12 +117,14 @@
   @apply btn;
 }
 
-@utility button--ghost { 
+@utility button--ghost {
   background-color: transparent;
   box-shadow: none;
+
   &:hover {
     box-shadow: none;
   }
+
   &:active {
     box-shadow: none;
   }
@@ -110,26 +133,34 @@
 @utility button--danger {
   @apply text-white bg-danger-600 border-danger-700;
   box-shadow: 0 3px 0 0 color-mix(in oklab, var(--color-danger-700) 80%, black 20%);
-  &:hover { 
+
+  &:hover {
     @apply bg-danger-700;
     transform: translateY(1px);
     box-shadow: 0 2px 0 0 color-mix(in oklab, var(--color-danger-700) 80%, black 20%);
   }
+
   &:active {
     transform: translateY(3px);
     box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-danger-700) 80%, black 20%);
   }
 }
 
-@utility badge { @apply inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold border-app-border; }
+@utility badge {
+  @apply inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold border-app-border;
+}
 
 @utility hover-lift {
   @apply transition-transform;
-  &:hover { transform: translateY(-1px); }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
 }
 
 /* Tailwind layers + BEM-style component classes for the installer UI */
 @layer base {
+
   html,
   body,
   #root {
@@ -143,6 +174,7 @@
 }
 
 @layer components {
+
   /* App shell */
   .app {
     @apply grid min-h-screen;
@@ -176,7 +208,9 @@
   }
 
   /* Sidebar navigation */
-  .nav { @apply flex flex-col gap-1; }
+  .nav {
+    @apply flex flex-col gap-1;
+  }
 
   .nav__link {
     @apply w-full text-left rounded-md px-3 py-2 text-sm border transition-colors text-app-fg border-transparent bg-app-panel/95;
@@ -193,21 +227,45 @@
   /* Panels / cards - utilities moved to top level */
 
   /* Sections */
-  .section { @apply space-y-2; }
-  .section__title { @apply text-xs font-semibold uppercase tracking-wider text-app-muted; }
-  .divider { @apply my-4 h-px w-full bg-app-border; }
+  .section {
+    @apply space-y-2;
+  }
+
+  .section__title {
+    @apply text-xs font-semibold uppercase tracking-wider text-app-muted;
+  }
+
+  .divider {
+    @apply my-4 h-px w-full bg-app-border;
+  }
 
   /* Buttons - utilities moved to top level */
 
   /* Form controls */
-  .field { @apply grid gap-1; }
-  .field__label { @apply text-xs font-medium text-app-muted; }
-  .field__control { @apply relative; }
-  .field__input { @apply w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 border-app-border text-app-fg; }
-  .field__input:focus { @apply ring-brand-accent border-brand-accent; }
+  .field {
+    @apply grid gap-1;
+  }
+
+  .field__label {
+    @apply text-xs font-medium text-app-muted;
+  }
+
+  .field__control {
+    @apply relative;
+  }
+
+  .field__input {
+    @apply w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 border-app-border text-app-fg;
+  }
+
+  .field__input:focus {
+    @apply ring-brand-accent border-brand-accent;
+  }
 
   /* Badges - utilities moved to top level */
-  .badge--on { @apply text-black bg-minecraft-green-300 border-minecraft-green-400; }
+  .badge--on {
+    @apply text-black bg-minecraft-green-300 border-minecraft-green-400;
+  }
 
   .main-content {
     @apply p-4 pb-32 overflow-y-auto scrollbar max-h-[calc(100vh-6rem)] w-full;
@@ -221,6 +279,14 @@
   .top-toolbar {
     @apply sticky top-0 z-50 flex h-12 items-center justify-between border-b px-3 md:px-4 border-app-border;
     background-color: color-mix(in oklab, var(--color-app-bg) 85%, black 15%);
+  }
+
+  .toolbar-right {
+    @apply flex items-center gap-2;
+  }
+
+  .app-version {
+    @apply text-xs text-app-muted font-mono cursor-default;
   }
 
   /* Secondary toolbar */
@@ -240,122 +306,259 @@
     @apply border-0;
   }
 
-  .app-title { @apply text-sm md:text-base font-semibold; }
-    .nav-tabs {
+  .app-title {
+    @apply text-sm md:text-base font-semibold;
+  }
+
+  .nav-tabs {
     @apply flex border-2 border-minecraft-slate-800 bg-minecraft-slate-900 rounded-sm;
   }
 
-    .nav-btn {
+  .nav-btn {
     @apply flex-1 py-1.5 px-4 text-center cursor-pointer bg-minecraft-slate-600 text-white/80 border-2 border-transparent -m-px font-semibold uppercase tracking-wider text-xs;
   }
 
-    .nav-btn:hover {
+  .nav-btn:hover {
     @apply bg-minecraft-slate-500 text-white;
   }
 
   .nav-btn.active {
     @apply bg-minecraft-slate-500 text-white border-b-2 border-b-white/90;
   }
-  .toolbar-icon-btn { @apply grid h-8 w-8 place-items-center rounded-md border text-sm border-app-border; }
+
+  .toolbar-icon-btn {
+    @apply grid h-8 w-8 place-items-center rounded-md border text-sm border-app-border;
+  }
 
   /* Layout */
-  .app-layout { @apply relative; }
-  .main-content { @apply mx-auto max-w-7xl p-4 md:p-6; }
-  .app-header h1 { @apply text-xl font-semibold; }
-  .app-header p { @apply text-sm; }
+  .app-layout {
+    @apply relative;
+  }
+
+  .main-content {
+    @apply mx-auto max-w-7xl p-4 md:p-6;
+  }
+
+  .app-header h1 {
+    @apply text-xl font-semibold;
+  }
+
+  .app-header p {
+    @apply text-sm;
+  }
 
   /* Slideout sidepanel (mobile) */
-  .mobile-menu-toggle { @apply md:hidden absolute left-3 top-14 z-40 grid h-10 w-10 place-items-center rounded-md border border-app-border bg-app-panel; }
-  .mobile-menu-toggle > span { @apply block h-0.5 w-5 rounded bg-app-fg; }
-  .mobile-menu-toggle > span + span { @apply mt-1; }
+  .mobile-menu-toggle {
+    @apply md:hidden absolute left-3 top-14 z-40 grid h-10 w-10 place-items-center rounded-md border border-app-border bg-app-panel;
+  }
+
+  .mobile-menu-toggle>span {
+    @apply block h-0.5 w-5 rounded bg-app-fg;
+  }
+
+  .mobile-menu-toggle>span+span {
+    @apply mt-1;
+  }
 
   .actions-sidepanel {
     @apply fixed left-0 top-0 z-50 h-full w-72 -translate-x-full transform border-r p-4 transition-transform md:hidden bg-app-panel border-app-border;
   }
-  .actions-sidepanel.open { @apply translate-x-0; }
-  .sidepanel-header { @apply mb-3 flex items-center justify-between; }
-  .sidepanel-content { @apply overflow-y-auto; }
-  .sidepanel-overlay { @apply fixed inset-0 z-40 hidden bg-black/50 md:hidden; }
-  .sidepanel-overlay.visible { @apply block; }
+
+  .actions-sidepanel.open {
+    @apply translate-x-0;
+  }
+
+  .sidepanel-header {
+    @apply mb-3 flex items-center justify-between;
+  }
+
+  .sidepanel-content {
+    @apply overflow-y-auto;
+  }
+
+  .sidepanel-overlay {
+    @apply fixed inset-0 z-40 hidden bg-black/50 md:hidden;
+  }
+
+  .sidepanel-overlay.visible {
+    @apply block;
+  }
 
   /* Desktop/Mobile visibility helpers */
-  .desktop-only { @apply hidden md:block; }
-  .mobile-only { @apply md:hidden; }
+  .desktop-only {
+    @apply hidden md:block;
+  }
+
+  .mobile-only {
+    @apply md:hidden;
+  }
 
   /* Section toolbars */
-  .section-toolbar { @apply mb-3 flex items-center justify-between; }
-  .toolbar-title { @apply flex items-center gap-2; }
-  .toolbar-title h2 { @apply text-lg font-semibold; }
-  .item-count { @apply text-xs text-muted; }
-  .toolbar-actions { @apply flex items-center gap-2; }
-  .toolbar-btn { @apply button; }
+  .section-toolbar {
+    @apply mb-3 flex items-center justify-between;
+  }
+
+  .toolbar-title {
+    @apply flex items-center gap-2;
+  }
+
+  .toolbar-title h2 {
+    @apply text-lg font-semibold;
+  }
+
+  .item-count {
+    @apply text-xs text-app-muted;
+  }
+
+  .toolbar-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .toolbar-btn {
+    @apply button;
+  }
 
   /* Actions */
-  .actions-list { @apply grid gap-2; }
-  .actions-grid { @apply grid gap-2 sm:grid-cols-2 lg:grid-cols-3; }
-  .action-btn { @apply button; }
-  .action-btn.danger { @apply button--danger; }
+  .actions-list {
+    @apply grid gap-2;
+  }
+
+  .actions-grid {
+    @apply grid gap-2 sm:grid-cols-2 lg:grid-cols-3;
+  }
 
   /* Installations grid/cards */
-  .installations-grid { @apply grid gap-3 md:grid-cols-2 lg:grid-cols-3; }
-  .installation-card { 
-    @apply panel flex flex-col cursor-pointer contain-layout transition-all duration-200 rounded-lg border p-4 hover:shadow-lg;
+  .installations-container {
+    @apply flex flex-col gap-4 w-full max-w-full;
   }
-  .installation-card.selected { 
-    @apply border-brand-accent bg-brand-accent/5; 
+
+  .installations-grid {
+    @apply flex flex-col;
   }
-  .installation-header { 
-    @apply text-sm font-semibold mb-2 flex items-center justify-between;
+
+  .installation-card {
+    @apply panel flex flex-col flex-1 cursor-pointer contain-layout transition-all duration-200 rounded-lg border hover:shadow-lg bg-minecraft-slate-800/50;
   }
+
+  .installation-card.selected {
+    @apply border-brand-accent;
+  }
+
+  .installation-header {
+    @apply text-sm font-semibold mb-2 flex items-center justify-between border-b border-app-border p-2 bg-app-panel rounded-t-lg;
+  }
+
+  .installation-footer {
+    @apply p-2 bg-app-panel rounded-b-lg mt-auto;
+  }
+
   .installation-placeholder {
     @apply w-full h-32 bg-app-border/20 rounded flex items-center justify-center mb-2;
   }
+
   .installation-details {
-    @apply flex flex-col gap-3 transition-all duration-200 overflow-hidden;
+    @apply flex flex-row gap-3 transition-all duration-200 overflow-hidden my-auto;
   }
-  .installation-details.max-h-0 {
-    max-height: 0;
-    padding: 0;
-    margin: 0;
+
+  .installation-title {
+    @apply flex items-center gap-2;
   }
-  .installation-details.max-h-full {
-    max-height: 200px;
-    padding: 12px 0;
+
+  .installation-title h3 {
+    @apply text-sm font-semibold;
   }
-  .installation-title { @apply flex items-center gap-2; }
-  .installation-title h3 { @apply text-sm font-semibold; }
-  .installation-checkbox { @apply cursor-pointer accent-brand-accent bg-minecraft-slate-500 border-minecraft-slate-800 appearance-none rounded-xs; }
-  .preset-icon { @apply w-full h-auto rounded object-cover mb-2; }
-  .preview-badge { @apply badge bg-brand-accent-600 text-white text-xs; border-color: color-mix(in oklab, var(--color-brand-accent-600) 70%, black 30%); }
-  .installation-path { @apply px-4 pt-2 text-xs text-app-muted break-all font-mono select-all; }
-  .installed-preset-info { @apply space-y-1; }
-  .no-preset-info { @apply text-app-muted; }
-  .installation-actions { @apply panel__body flex items-center gap-2; }
-  .checkbox-label { @apply text-xs text-app-muted; }
-  .installation-action-btn { @apply m-0; }
+
+  .installation-checkbox {
+    @apply cursor-pointer accent-brand-accent bg-minecraft-slate-500 border-minecraft-slate-800 appearance-none rounded-xs;
+  }
+
+  .preset-icon {
+    @apply w-full h-auto rounded object-cover mb-2;
+  }
+
+  .preview-badge {
+    @apply badge bg-brand-accent-600 text-white text-xs;
+    border-color: color-mix(in oklab, var(--color-brand-accent-600) 70%, black 30%);
+  }
+
+  .installation-path {
+    @apply px-4 pt-2 text-xs text-app-muted break-all font-mono select-all;
+  }
+
+  .installed-preset-info {
+    @apply space-y-1;
+  }
+
+  .no-preset-info {
+    @apply text-app-muted;
+  }
+
+  .installation-actions {
+    @apply panel__body flex items-center gap-2;
+  }
+
+  .checkbox-label {
+    @apply text-xs text-app-muted;
+  }
+
+  .installation-action-btn {
+    @apply m-0;
+  }
 
   /* Presets */
-  .presets-grid { @apply flex flex-col max-w-full gap-4; }
+  .presets-grid {
+    @apply flex flex-col max-w-full gap-4;
+  }
+
   .presets-list {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
   }
+
   .preset-card {
-    @apply panel flex flex-col cursor-pointer contain-layout transition-all duration-200 rounded-lg border p-4 hover:shadow-lg;
+    @apply panel flex flex-col h-full cursor-pointer contain-layout transition-all duration-200 rounded-lg border p-4 hover:shadow-lg;
   }
 
-  .preset-card.selected { @apply border-brand-accent; }
-  .preset-header { @apply flex items-center gap-3 border-b px-4 py-3 border-app-border; }
-  .preset-link { @apply hover:underline cursor-pointer; }
+  .preset-card.selected {
+    @apply border-brand-accent;
+  }
+
+  .preset-header {
+    @apply flex items-center gap-3 px-4 py-3;
+  }
+
+  .preset-title {
+    @apply text-sm font-semibold;
+  }
+
+  .preset-header__toggle {
+    @apply ml-auto pl-3 border-l border-app-border text-app-muted hover:text-app-fg transition-colors h-6 flex items-center;
+  }
+
+  .preset-header__chevron {
+    @apply transition-transform;
+  }
+
+  .preset-header__chevron--rotated {
+    transform: rotate(180deg);
+  }
+
+  .preset-link {
+    @apply hover:underline cursor-pointer;
+  }
+
   .preset-stub-container {
-    @apply w-full overflow-hidden relative max-w-full h-10;
+    @apply w-full min-w-0 overflow-hidden relative h-10 inline-block;
     scrollbar-gutter: stable;
   }
+
   .preset-stub-container:hover {
     @apply overflow-x-auto;
   }
-  .preset-stub-link { 
+
+  .preset-stub-link {
     @apply hover:underline cursor-pointer font-mono text-xs whitespace-nowrap block transition-all duration-200;
   }
+
   .preset-stub-container:not(:hover) .preset-stub-link {
     @apply overflow-hidden max-w-full text-ellipsis;
   }
@@ -364,45 +567,119 @@
     @apply flex flex-col gap-3;
   }
 
-  .install-preset-btn { @apply m-4 btn; }
-  .installation-action-btn { @apply m-0; }
+  .preset-card__footer {
+    @apply mt-auto pt-4;
+  }
+
+  .install-preset-btn {
+    @apply btn;
+  }
+
+  .installation-action-btn {
+    @apply m-0;
+  }
 
   /* Empty state */
-  .empty-state { @apply panel p-6 text-center text-sm text-app-muted; }
+  .empty-state {
+    @apply panel p-6 text-center text-sm text-app-muted;
+  }
 
   /* Drag & drop */
-  .drop-zone { @apply my-6 grid h-28 place-items-center rounded-md border-2 border-dashed border-app-border bg-app-panel/90; }
-  .drop-zone.drag-over { @apply border-brand-accent bg-brand-accent/10; }
+  .drop-zone {
+    @apply my-6 grid h-28 place-items-center rounded-md border-2 border-dashed border-app-border bg-app-panel/90;
+  }
+
+  .drop-zone.drag-over {
+    @apply border-brand-accent bg-brand-accent/10;
+  }
 
   /* Status & progress */
-  .status { @apply text-sm; }
-  .status.error { @apply text-danger-600; }
-  .progress-container { @apply mt-2 h-2 w-full overflow-hidden rounded bg-black/30; }
-  .progress-bar { @apply h-full w-1/2 bg-brand-accent-600; }
+  .status {
+    @apply text-sm;
+  }
+
+  .status.error {
+    @apply text-danger-600;
+  }
+
+  .progress-container {
+    @apply mt-2 h-2 w-full overflow-hidden rounded bg-black/30;
+  }
+
+  .progress-bar {
+    @apply h-full w-1/2 bg-brand-accent-600;
+  }
 
   /* Console */
-  .console-header { @apply mt-6 flex cursor-pointer items-center justify-between border px-4 py-2 border-app-border bg-app-panel; }
-  .console-panel { @apply overflow-hidden rounded-b-md border border-app-border bg-app-panel; max-height: 18rem; transition: max-height .2s ease; }
-  .console-panel.collapsed { max-height: 0; border-top-width: 0; }
-  .console-panel.expanded { max-height: 18rem; }
-  .console-output { @apply h-56 whitespace-pre-wrap overflow-auto p-3 text-xs font-mono; }
-  .console-clear-btn { @apply m-2 self-end button; }
+  .console-container {
+    @apply flex flex-col overflow-hidden relative h-min;
+  }
+
+  .console-header {
+    @apply outline-1 outline-black mt-6 flex cursor-pointer items-center justify-between border px-4 py-2 border-app-border bg-app-panel;
+  }
+
+  .console-panel {
+    @apply overflow-hidden rounded-b-md border border-app-border bg-app-panel/50 backdrop-blur-sm;
+    max-height: 18rem;
+    transition: max-height .2s ease;
+  }
+
+  .console-panel.collapsed {
+    max-height: 0;
+    border-top-width: 0;
+  }
+
+  .console-panel.expanded {
+    max-height: 18rem;
+  }
+
+  .console-output {
+    @apply font-mono p-4 text-xs h-64 overflow-y-auto whitespace-pre-wrap break-all relative text-app-muted contain-paint scrollbar;
+  }
+
+  .console-clear-btn {
+    @apply m-2 self-end button;
+  }
 
   /* Toolbar menu button */
-  .toolbar-menu-btn { @apply button button--ghost p-2; }
-  
+  .toolbar-menu-btn {
+    @apply p-2 rounded-md text-app-muted hover:text-app-fg hover:bg-app-border transition-colors border-0;
+  }
+
   /* Popovers */
-  .settings-popover, .help-popover { @apply rounded-md border shadow-lg border-app-border bg-app-panel text-app-fg; }
-  
-  .toolbar-popover { 
+  .settings-popover,
+  .help-popover {
+    @apply rounded-md border shadow-lg border-app-border bg-app-panel text-app-fg;
+  }
+
+  .toolbar-popover {
     @apply rounded-md border shadow-lg border-app-border bg-app-panel text-app-fg fixed top-16 right-1 z-1000 min-w-80;
   }
-  .popover-header { @apply flex items-center justify-between border-b px-4 py-2 border-app-border; }
-  .popover-content { @apply p-4 space-y-4; }
-  .setting-group > label { @apply block text-xs font-semibold text-muted mb-1; }
-  .setting-buttons { @apply flex flex-wrap gap-2; }
-  .setting-btn { @apply button; }
-  .setting-btn.danger { @apply button--danger; }
+
+  .popover-header {
+    @apply flex items-center justify-between border-b px-4 py-2 border-app-border;
+  }
+
+  .popover-content {
+    @apply p-4 space-y-4;
+  }
+
+  .setting-group>label {
+    @apply block text-xs font-semibold text-muted mb-1;
+  }
+
+  .setting-buttons {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .setting-btn {
+    @apply button;
+  }
+
+  .setting-btn.danger {
+    @apply button--danger;
+  }
 
   .status-alert {
     @apply fixed right-2 bottom-14 z-40 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg cursor-pointer select-none;
@@ -412,7 +689,7 @@
   .console-container {
     @apply flex flex-col overflow-hidden relative;
   }
-  
+
   .console-output {
     @apply font-mono;
     font-feature-settings: "liga" 0, "calt" 0;
@@ -422,8 +699,13 @@
     @apply font-sans;
   }
 
-  .console-panel--expanded { @apply max-h-80; }
-  .console-panel--collapsed { @apply max-h-0 rounded-b-xl; }
+  .console-panel--expanded {
+    @apply max-h-80;
+  }
+
+  .console-panel--collapsed {
+    @apply max-h-0 rounded-b-xl;
+  }
 
   body:has(.console-panel--expanded) .status-alert {
     @apply bottom-80;
@@ -498,7 +780,7 @@
     @apply absolute flex h-full w-1/2 select-none items-center justify-center text-white/75 opacity-0 transition-opacity group-data-checked:opacity-100;
   }
 
-  .switch__track-background + .switch__track-background {
+  .switch__track-background+.switch__track-background {
     @apply right-0 rounded-r border-2 border-l-0 border-minecraft-slate-200/30 text-minecraft-slate-900/50 opacity-100 group-data-checked:opacity-0;
   }
 
@@ -643,8 +925,7 @@
 
   /* Sidebar Navigation */
   .sidebar-nav {
-    @apply flex flex-col h-full bg-app-panel border-r border-app-border;
-    width: 16rem;
+    @apply flex flex-col h-full bg-app-panel border-r border-app-border w-64;
   }
 
   .sidebar-nav__header {
@@ -656,7 +937,8 @@
   }
 
   .sidebar-nav__content {
-    @apply flex flex-col gap-1 p-2;
+    @apply flex flex-col gap-1 p-2 overflow-y-auto scrollbar max-h-[calc(100vh-22rem)];
+    scrollbar-gutter: stable;
   }
 
   .sidebar-nav__item {
@@ -668,7 +950,7 @@
   }
 
   .sidebar-nav__item--active {
-    @apply border-brand-accent bg-brand-accent/20 text-brand-accent;
+    @apply border-brand-accent bg-brand-accent/10 text-minecraft-blue-50;
   }
 
   .sidebar-nav__item-icon {
@@ -692,7 +974,7 @@
   }
 
   .sidebar-nav__item--active .sidebar-nav__item-description {
-    @apply text-brand-accent/70;
+    @apply text-minecraft-blue-200;
   }
 
   /* App Layout with Sidebar */
@@ -701,7 +983,7 @@
   }
 
   .app-sidebar {
-    @apply flex-shrink-0;
+    @apply flex-shrink-0 border-t border-l border-l-minecraft-slate-500 border-black;
   }
 
   .app-main {
@@ -709,7 +991,7 @@
   }
 
   .app-content {
-    @apply flex-1 overflow-hidden;
+    @apply flex-1 overflow-hidden border-l border-black;
   }
 
   /* Dropzone Overlay */
@@ -727,7 +1009,7 @@
 
   .dropzone-overlay__glow {
     @apply absolute inset-0 bg-gradient-to-r from-brand-accent/20 via-brand-accent/10 to-brand-accent/20;
-    box-shadow: 
+    box-shadow:
       inset 0 0 100px 20px rgba(var(--color-brand-accent-rgb), 0.15),
       inset 0 0 200px 40px rgba(var(--color-brand-accent-rgb), 0.1),
       inset 0 0 300px 60px rgba(var(--color-brand-accent-rgb), 0.05);

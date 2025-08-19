@@ -55,13 +55,13 @@ export const ConsolePanel: React.FC<ConsolePanelProps> = ({
       </div>
 
       <div
-        className={`console-panel border border-t-0 overflow-hidden transition-all duration-300 bg-app-bg border-app-border ${
+        className={`console-panel border overflow-hidden transition-all duration-300 bg-app-bg border-app-border ${
           isExpanded ? "console-panel--expanded" : "console-panel--collapsed"
         }`}
       >
         <div
           ref={outputRef}
-          className="console-output p-4 text-xs h-64 overflow-y-auto whitespace-pre-wrap break-all relative text-app-muted"
+          className="console-output"
         >
           {output.length > 0 ? output.join("\n") : "No output yet..."}
 

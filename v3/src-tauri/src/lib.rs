@@ -1,10 +1,9 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use chrono::{Local, DateTime, Utc};
-use reqwest::blocking::{get, Client};
+use reqwest::Client;
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 use winreg::enums::*;
@@ -12,6 +11,7 @@ use winreg::RegKey;
 use std::collections::HashMap;
 use tauri::Emitter;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_shell::ShellExt;
 use url::Url;
 
 const BRTX_DIR_NAME: &str = "graphics.bedrock";
@@ -78,10 +78,10 @@ fn cache_file_path() -> PathBuf {
     brtx_dir().join("cache.json")
 }
 
-fn load_cache() -> Cache {
+async fn load_cache() -> Cache {
     let cache_file = brtx_dir().join("cache.json");
     if cache_file.exists() {
-        if let Ok(content) = fs::read_to_string(&cache_file) {
+        if let Ok(content) = tokio::fs::read_to_string(&cache_file).await {
             if let Ok(cache) = serde_json::from_str::<Cache>(&content) {
                 return cache;
             }
@@ -93,26 +93,24 @@ fn load_cache() -> Cache {
     }
 }
 
-fn save_cache(cache: &Cache) -> Result<(), String> {
+async fn save_cache(cache: &Cache) -> Result<(), String> {
     let cache_path = cache_file_path();
     ensure_dir(cache_path.parent().unwrap()).map_err(|e| e.to_string())?;
     let content = serde_json::to_string_pretty(cache).map_err(|e| e.to_string())?;
-    fs::write(cache_path, content).map_err(|e| e.to_string())
+    tokio::fs::write(&cache_path, content).await.map_err(|e| e.to_string())
 }
 
 fn is_cache_valid<T>(cached: &CacheEntry<T>) -> bool {
     Utc::now() < cached.expires_at
 }
 
-fn run_powershell(script: &str) -> Result<String, String> {
-    let output = Command::new("powershell.exe")
-        .arg("-NoProfile")
-        .arg("-ExecutionPolicy").arg("Bypass")
-        .arg("-Command")
-        .arg(script)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+async fn run_powershell_async(app_handle: tauri::AppHandle, script: &str) -> Result<String, String> {
+    let shell = app_handle.shell();
+    let output = shell
+        .command("powershell.exe")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
         .output()
+        .await
         .map_err(|e| format!("Failed to spawn PowerShell: {e}"))?;
 
     if output.status.success() {
@@ -187,7 +185,7 @@ fn get_iobit_unlocker_exe() -> Option<PathBuf> {
     None
 }
 
-fn iobit_delete(iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<(), String> {
+async fn iobit_delete_async(app_handle: &tauri::AppHandle, iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<(), String> {
     // RTX material files that need to be deleted before installation
     let rtx_files_to_delete = [
         "RTXStub.material.bin",
@@ -246,12 +244,12 @@ fn iobit_delete(iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<
         files_to_delete.iter().cloned().collect::<Vec<_>>().join(", ")
     );
 
-    let output = Command::new("powershell.exe")
-        .arg("-NoProfile")
-        .arg("-ExecutionPolicy").arg("Bypass")
-        .arg("-Command")
-        .arg(ps_cmd)
+    let shell = app_handle.shell();
+    let output = shell
+        .command("powershell.exe")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_cmd])
         .output()
+        .await
         .map_err(|e| format!("Failed to run PowerShell for IObit delete: {e}"))?;
 
     if !output.status.success() {
@@ -263,7 +261,7 @@ fn iobit_delete(iobit: &Path, location: &Path, materials: &[PathBuf]) -> Result<
     Ok(())
 }
 
-fn iobit_copy(iobit: &Path, destination: &Path, materials: &[PathBuf]) -> Result<(), String> {
+async fn iobit_copy_async(app_handle: &tauri::AppHandle, iobit: &Path, destination: &Path, materials: &[PathBuf]) -> Result<(), String> {
     // Best-effort ensure destination directory for sideloaded installs
     let dest_dir = destination.join("data").join("renderer").join("materials");
     let _ = ensure_dir(&dest_dir);
@@ -301,12 +299,12 @@ fn iobit_copy(iobit: &Path, destination: &Path, materials: &[PathBuf]) -> Result
         dest_dir.display()
     );
 
-    let output = Command::new("powershell.exe")
-        .arg("-NoProfile")
-        .arg("-ExecutionPolicy").arg("Bypass")
-        .arg("-Command")
-        .arg(ps_cmd)
+    let shell = app_handle.shell();
+    let output = shell
+        .command("powershell.exe")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_cmd])
         .output()
+        .await
         .map_err(|e| format!("Failed to run PowerShell for IObit copy: {e}"))?;
 
     if !output.status.success() {
@@ -318,14 +316,14 @@ fn iobit_copy(iobit: &Path, destination: &Path, materials: &[PathBuf]) -> Result
     Ok(())
 }
 
-fn copy_shader_files(install_location: &str, materials: &[PathBuf], pack: &PackInfo) -> Result<(), String> {
+async fn copy_shader_files_async(app_handle: &tauri::AppHandle, install_location: &str, materials: &[PathBuf], pack: &PackInfo) -> Result<(), String> {
     let mc_dest = Path::new(install_location).join("data").join("renderer").join("materials");
     let sideloaded = is_sideloaded(install_location);
 
     // Prefer IObit Unlocker for both sideloaded and WindowsApps installs
     if let Some(ioexe) = get_iobit_path_cached() {
         println!("Using IObit Unlocker for delete+copy (sideloaded: {})", sideloaded);
-        match try_iobit_copy(&ioexe, install_location, materials) {
+        match try_iobit_copy_async(app_handle, &ioexe, install_location, materials).await {
             Ok(_) => {
                 let installed_preset = InstalledPreset {
                     uuid: pack.uuid.clone(),
@@ -371,7 +369,7 @@ fn copy_shader_files(install_location: &str, materials: &[PathBuf], pack: &PackI
 
     // WindowsApps fallback: elevated PowerShell
     println!("Attempting elevated PowerShell fallback...");
-    match try_elevated_copy(&mc_dest, materials) {
+    match try_elevated_copy_async(app_handle, &mc_dest, materials).await {
         Ok(_) => {
             let installed_preset = InstalledPreset {
                 uuid: pack.uuid.clone(),
@@ -387,17 +385,17 @@ fn copy_shader_files(install_location: &str, materials: &[PathBuf], pack: &PackI
     }
 }
 
-fn try_iobit_copy(ioexe: &Path, install_location: &str, materials: &[PathBuf]) -> Result<(), String> {
+async fn try_iobit_copy_async(app_handle: &tauri::AppHandle, ioexe: &Path, install_location: &str, materials: &[PathBuf]) -> Result<(), String> {
     println!("Starting IObit operations for {} files", materials.len());
     let install_path = Path::new(install_location);
     
     // Delete existing files first
     println!("Deleting existing material files...");
-    iobit_delete(ioexe, install_path, materials)?;
+    iobit_delete_async(app_handle, ioexe, install_path, materials).await?;
     
     // Copy new files
     println!("Copying material files with IObit Unlocker...");
-    iobit_copy(ioexe, install_path, materials)?;
+    iobit_copy_async(app_handle, ioexe, install_path, materials).await?;
     
     // Skipping file verification per user preference
     std::thread::sleep(std::time::Duration::from_millis(500));
@@ -406,7 +404,7 @@ fn try_iobit_copy(ioexe: &Path, install_location: &str, materials: &[PathBuf]) -
     Ok(())
 }
 
-fn try_elevated_copy(mc_dest: &Path, materials: &[PathBuf]) -> Result<(), String> {
+async fn try_elevated_copy_async(app_handle: &tauri::AppHandle, mc_dest: &Path, materials: &[PathBuf]) -> Result<(), String> {
     // Use PowerShell with elevation request to copy files
     let mut ps_script = String::from("Start-Process powershell -Verb RunAs -ArgumentList '-Command', '");
     
@@ -419,12 +417,12 @@ fn try_elevated_copy(mc_dest: &Path, materials: &[PathBuf]) -> Result<(), String
     
     ps_script.push_str("' -Wait");
     
-    let output = Command::new("powershell.exe")
-        .arg("-NoProfile")
-        .arg("-ExecutionPolicy").arg("Bypass")
-        .arg("-Command")
-        .arg(&ps_script)
+    let shell = app_handle.shell();
+    let output = shell
+        .command("powershell.exe")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps_script])
         .output()
+        .await
         .map_err(|e| format!("Failed to run elevated PowerShell: {e}"))?;
 
     if output.status.success() {
@@ -509,7 +507,7 @@ fn find_launcher_installs(
 }
 
 #[tauri::command]
-fn list_installations() -> Result<Vec<Installation>, String> {
+async fn list_installations(app_handle: tauri::AppHandle) -> Result<Vec<Installation>, String> {
     let ps = r#"
     $ErrorActionPreference='Stop';
     $pkgs = Get-AppxPackage -Name 'Microsoft.Minecraft*' | Where-Object { $_.InstallLocation -notlike '*Java*' };
@@ -520,7 +518,7 @@ fn list_installations() -> Result<Vec<Installation>, String> {
     }
     $res | ConvertTo-Json -Depth 3
     "#;
-    let out = run_powershell(ps)?;
+    let out = run_powershell_async(app_handle, ps).await?;
     let out_trim = out.trim();
     if out_trim.is_empty() { return Ok(vec![]); }
     
@@ -556,13 +554,13 @@ fn list_installations() -> Result<Vec<Installation>, String> {
 }
 
 #[tauri::command]
-fn get_api_packs() -> Result<Vec<PackInfo>, String> {
-    list_presets(false)
+async fn get_api_packs() -> Result<Vec<PackInfo>, String> {
+    list_presets(false).await
 }
 
 #[tauri::command]
-fn list_presets(force_refresh: bool) -> Result<Vec<PackInfo>, String> {
-    let mut cache = load_cache();
+async fn list_presets(force_refresh: bool) -> Result<Vec<PackInfo>, String> {
+    let mut cache = load_cache().await;
     
     // Check if we have valid cached data and don't need to force refresh
     if !force_refresh {
@@ -578,8 +576,11 @@ fn list_presets(force_refresh: bool) -> Result<Vec<PackInfo>, String> {
     ensure_dir(&packs_dir).map_err(|e| e.to_string())?;
     
     let url = "https://bedrock.graphics/api";
-    let response = get(url).map_err(|e| e.to_string())?;
-    let text = response.text().map_err(|e| e.to_string())?;
+    let client = Client::new();
+    let text = client
+        .get(url)
+        .send().await.map_err(|e| e.to_string())?
+        .text().await.map_err(|e| e.to_string())?;
     
     // Parse the JSON response directly as PackInfo array
     let presets: Vec<PackInfo> = serde_json::from_str(&text)
@@ -595,7 +596,7 @@ fn list_presets(force_refresh: bool) -> Result<Vec<PackInfo>, String> {
         expires_at,
     });
     
-    save_cache(&cache).map_err(|e| e.to_string())?;
+    save_cache(&cache).await.map_err(|e| e.to_string())?;
     
     Ok(presets)
 }
@@ -622,8 +623,8 @@ fn save_installed_preset(install_location: &str, preset: &InstalledPreset) -> Re
     write_json_file(&presets_file, &installations)
 }
 
-fn get_cached_download(url: &str) -> Option<Vec<u8>> {
-    let cache = load_cache();
+async fn get_cached_download(url: &str) -> Option<Vec<u8>> {
+    let cache = load_cache().await;
     if let Some(cached) = cache.downloads.get(url) {
         if is_cache_valid(cached) {
             return Some(cached.data.clone());
@@ -632,8 +633,8 @@ fn get_cached_download(url: &str) -> Option<Vec<u8>> {
     None
 }
 
-fn cache_download(url: &str, data: &[u8]) -> Result<(), String> {
-    let mut cache = load_cache();
+async fn cache_download(url: &str, data: &[u8]) -> Result<(), String> {
+    let mut cache = load_cache().await;
     let now = Utc::now();
     let expires_at = now + chrono::Duration::hours(24); // Cache downloads for 24 hours
     
@@ -643,7 +644,20 @@ fn cache_download(url: &str, data: &[u8]) -> Result<(), String> {
         expires_at,
     });
     
-    save_cache(&cache)
+    save_cache(&cache).await
+}
+
+// Helper: download a URL to a file path with caching
+async fn download_to_file_with_cache(client: &Client, url: &str, file_path: &Path) -> Result<(), String> {
+    if let Some(cached_data) = get_cached_download(url).await {
+        tokio::fs::write(file_path, cached_data).await.map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    let resp = client.get(url).send().await.map_err(|e| e.to_string())?;
+    let data = resp.bytes().await.map_err(|e| e.to_string())?;
+    let _ = cache_download(url, &data).await;
+    tokio::fs::write(file_path, data).await.map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -663,26 +677,26 @@ fn clear_cache() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_cache_info() -> Result<serde_json::Value, String> {
-    let cache = load_cache();
+async fn get_cache_info() -> Result<serde_json::Value, String> {
+    let cache = load_cache().await;
     let mut info = serde_json::Map::new();
     
     if let Some(ref presets_cache) = cache.presets {
         info.insert("presets_cached".to_string(), serde_json::Value::Bool(true));
-        info.insert("presets_count".to_string(), serde_json::Value::Number(presets_cache.data.len().into()));
+        info.insert("presets_count".to_string(), serde_json::Value::from(presets_cache.data.len() as u64));
         info.insert("presets_expires".to_string(), serde_json::Value::String(presets_cache.expires_at.to_rfc3339()));
     } else {
         info.insert("presets_cached".to_string(), serde_json::Value::Bool(false));
     }
     
-    info.insert("downloads_cached".to_string(), serde_json::Value::Number(cache.downloads.len().into()));
+    info.insert("downloads_cached".to_string(), serde_json::Value::from(cache.downloads.len() as u64));
     
     Ok(serde_json::Value::Object(info))
 }
 
 #[tauri::command]
-fn download_and_install_pack(uuid: String, selected_names: Vec<String>) -> Result<(), String> {
-    let all = list_installations()?;
+async fn download_and_install_pack(app_handle: tauri::AppHandle, uuid: String, selected_names: Vec<String>) -> Result<(), String> {
+    let all = list_installations(app_handle.clone()).await?;
     // Map by InstallLocation because the UI sends InstallLocation values
     let map: std::collections::HashMap<_, _> = all
         .into_iter()
@@ -690,7 +704,7 @@ fn download_and_install_pack(uuid: String, selected_names: Vec<String>) -> Resul
         .collect();
     
     // Get the preset info from cached API data
-    let packs = get_api_packs()?;
+    let packs = get_api_packs().await?;
     let preset = packs.iter().find(|p| p.uuid == uuid).ok_or("Preset not found")?;
     
     let dir = brtx_dir().join("packs").join(&uuid);
@@ -698,39 +712,21 @@ fn download_and_install_pack(uuid: String, selected_names: Vec<String>) -> Resul
     let client = Client::new();
     
     // Download files with caching
-    let dl = |url: &str, name: &str| -> Result<(), String> {
-        let file_path = dir.join(name);
-        
-        // Check if we have cached data
-        if let Some(cached_data) = get_cached_download(url) {
-            fs::write(&file_path, cached_data).map_err(|e| e.to_string())?;
-            return Ok(());
-        }
-        
-        // Download fresh data
-        let mut resp = client.get(url).send().map_err(|e| e.to_string())?;
-        let mut data = Vec::new();
-        resp.copy_to(&mut data).map_err(|e| e.to_string())?;
-        
-        // Cache the download
-        let _ = cache_download(url, &data);
-        
-        // Save to file
-        fs::write(&file_path, data).map_err(|e| e.to_string())?;
-        Ok(())
-    };
-    dl(&preset.stub, "RTXStub.material.bin")?;
-    dl(&preset.tonemapping, "RTXPostFX.Tonemapping.material.bin")?;
-    dl(&preset.bloom, "RTXPostFX.Bloom.material.bin")?;
+    let stub_path = dir.join("RTXStub.material.bin");
+    download_to_file_with_cache(&client, &preset.stub, &stub_path).await?;
+    let tone_path = dir.join("RTXPostFX.Tonemapping.material.bin");
+    download_to_file_with_cache(&client, &preset.tonemapping, &tone_path).await?;
+    let bloom_path = dir.join("RTXPostFX.Bloom.material.bin");
+    download_to_file_with_cache(&client, &preset.bloom, &bloom_path).await?;
 
     let materials = vec![
-        dir.join("RTXStub.material.bin"),
-        dir.join("RTXPostFX.Tonemapping.material.bin"),
-        dir.join("RTXPostFX.Bloom.material.bin"),
+        stub_path.clone(),
+        tone_path.clone(),
+        bloom_path.clone(),
     ];
     for install_location in selected_names {
         if let Some(ins) = map.get(&install_location) {
-            copy_shader_files(&ins.install_location, &materials, preset)?;
+            copy_shader_files_async(&app_handle, &ins.install_location, &materials, preset).await?;
         } else {
             println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
         }
@@ -739,14 +735,14 @@ fn download_and_install_pack(uuid: String, selected_names: Vec<String>) -> Resul
 }
 
 #[tauri::command]
-fn install_from_rtpack(rtpack_path: String, selected_names: Vec<String>) -> Result<(), String> {
+async fn install_from_rtpack(app_handle: tauri::AppHandle, rtpack_path: String, selected_names: Vec<String>) -> Result<(), String> {
     if !rtpack_path.to_ascii_lowercase().ends_with(".rtpack") { return Err("Invalid file type; expected .rtpack".into()); }
     let pack_name = Path::new(&rtpack_path).file_stem().and_then(|s| s.to_str()).ok_or("Invalid pack path")?.to_string();
     let out_dir = brtx_dir().join("packs").join(&pack_name);
     extract_rtpack_to(Path::new(&rtpack_path), &out_dir)?;
     let materials = find_materials(&out_dir);
     if materials.is_empty() { return Err("No materials found in pack".into()); }
-    let all = list_installations()?;
+    let all = list_installations(app_handle.clone()).await?;
     let map: std::collections::HashMap<_, _> = all
         .into_iter()
         .map(|i| (i.install_location.clone(), i))
@@ -761,7 +757,7 @@ fn install_from_rtpack(rtpack_path: String, selected_names: Vec<String>) -> Resu
                 tonemapping: String::new(),
                 bloom: String::new(),
             };
-            copy_shader_files(&ins.install_location, &materials, &dummy_pack)?;
+            copy_shader_files_async(&app_handle, &ins.install_location, &materials, &dummy_pack).await?;
         } else {
             println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
         }
@@ -770,10 +766,10 @@ fn install_from_rtpack(rtpack_path: String, selected_names: Vec<String>) -> Resu
 }
 
 #[tauri::command]
-fn install_materials(material_paths: Vec<String>, selected_names: Vec<String>) -> Result<(), String> {
+async fn install_materials(app_handle: tauri::AppHandle, material_paths: Vec<String>, selected_names: Vec<String>) -> Result<(), String> {
     if material_paths.is_empty() { return Err("No files provided".into()); }
     let materials: Vec<PathBuf> = material_paths.iter().map(PathBuf::from).collect();
-    let all = list_installations()?;
+    let all = list_installations(app_handle.clone()).await?;
     let map: std::collections::HashMap<_, _> = all.into_iter().map(|i| (i.install_location.clone(), i)).collect();
     for install_location in selected_names {
         if let Some(ins) = map.get(&install_location) {
@@ -785,7 +781,7 @@ fn install_materials(material_paths: Vec<String>, selected_names: Vec<String>) -
                 tonemapping: String::new(),
                 bloom: String::new(),
             };
-            copy_shader_files(&ins.install_location, &materials, &dummy_pack)?;
+            copy_shader_files_async(&app_handle, &ins.install_location, &materials, &dummy_pack).await?;
         } else {
             println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
         }
@@ -828,10 +824,10 @@ fn zip_dir(src_dir: &Path, dest_zip: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn backup_selected(dest_dir: String, selected_names: Option<Vec<String>>) -> Result<Vec<String>, String> {
+async fn backup_selected(app_handle: tauri::AppHandle, dest_dir: String, selected_names: Option<Vec<String>>) -> Result<Vec<String>, String> {
     let dest = PathBuf::from(dest_dir);
     if !dest.exists() { return Err("Destination directory does not exist".into()); }
-    let all = list_installations()?;
+    let all = list_installations(app_handle).await?;
     // UI sends InstallLocation values in selected_names
     let targets: Vec<Installation> = if let Some(names) = selected_names {
         all
@@ -861,17 +857,17 @@ fn backup_selected(dest_dir: String, selected_names: Option<Vec<String>>) -> Res
 }
 
 #[tauri::command]
-fn install_dlss_for_selected(selected_names: Vec<String>) -> Result<(), String> {
+async fn install_dlss_for_selected(app_handle: tauri::AppHandle, selected_names: Vec<String>) -> Result<(), String> {
     let dir = brtx_dir().join("dlss");
     if !dir.exists() {
         ensure_dir(&dir).map_err(|e| e.to_string())?;
         let client = Client::new();
-        let versions: serde_json::Value = client.get("https://bedrock.graphics/api/dlss").send().map_err(|e| e.to_string())?.json().map_err(|e| e.to_string())?;
+        let versions: serde_json::Value = client.get("https://bedrock.graphics/api/dlss").send().await.map_err(|e| e.to_string())?.json().await.map_err(|e| e.to_string())?;
         let latest = versions.get("latest").and_then(|v| v.as_str()).ok_or("Invalid DLSS API response")?;
         let zip_path = dir.join("nvngx_dlss.zip");
-        let mut resp = client.get(latest).send().map_err(|e| e.to_string())?;
-        let mut f = File::create(&zip_path).map_err(|e| e.to_string())?;
-        resp.copy_to(&mut f).map_err(|e| e.to_string())?;
+        let resp = client.get(latest).send().await.map_err(|e| e.to_string())?;
+        let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+        tokio::fs::write(&zip_path, bytes).await.map_err(|e| e.to_string())?;
         // extract
         extract_rtpack_to(&zip_path, &dir).or_else(|_| {
             // Some DLSS zips may not be .rtpack format; try normal zip extraction path
@@ -891,7 +887,7 @@ fn install_dlss_for_selected(selected_names: Vec<String>) -> Result<(), String> 
         let _ = fs::remove_file(&zip_path);
     }
 
-    let all = list_installations()?;
+    let all = list_installations(app_handle.clone()).await?;
     let map: std::collections::HashMap<_, _> = all
         .into_iter()
         .map(|i| (i.install_location.clone(), i))
@@ -913,12 +909,10 @@ fn install_dlss_for_selected(selected_names: Vec<String>) -> Result<(), String> 
                     "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
                     ioexe_ps, del_arglist_ps
                 );
-                let out = Command::new("powershell.exe")
-                    .arg("-NoProfile")
-                    .arg("-ExecutionPolicy").arg("Bypass")
-                    .arg("-Command")
-                    .arg(del_ps_cmd)
+                let out = app_handle.shell().command("powershell.exe")
+                    .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &del_ps_cmd])
                     .output()
+                    .await
                     .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
                 if !out.status.success() {
                     let stderr = String::from_utf8_lossy(&out.stderr);
@@ -931,12 +925,10 @@ fn install_dlss_for_selected(selected_names: Vec<String>) -> Result<(), String> 
                     "Start-Process -FilePath '{}' -ArgumentList '{}' -Wait -PassThru",
                     ioexe_ps, copy_arglist_ps
                 );
-                let out = Command::new("powershell.exe")
-                    .arg("-NoProfile")
-                    .arg("-ExecutionPolicy").arg("Bypass")
-                    .arg("-Command")
-                    .arg(copy_ps_cmd)
+                let out = app_handle.shell().command("powershell.exe")
+                    .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &copy_ps_cmd])
                     .output()
+                    .await
                     .map_err(|e| format!("Failed to run IObit Unlocker: {e}"))?;
                 if !out.status.success() {
                     let stderr = String::from_utf8_lossy(&out.stderr);
@@ -965,8 +957,8 @@ fn update_options_file(path: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn update_options_for_selected(selected_names: Vec<String>) -> Result<(), String> {
-    let all = list_installations()?;
+async fn update_options_for_selected(app_handle: tauri::AppHandle, selected_names: Vec<String>) -> Result<(), String> {
+    let all = list_installations(app_handle.clone()).await?;
     // Map by InstallLocation because the UI sends InstallLocation values
     let map: std::collections::HashMap<_, _> = all
         .into_iter()
@@ -985,6 +977,23 @@ fn update_options_for_selected(selected_names: Vec<String>) -> Result<(), String
 }
 
 #[tauri::command]
+fn is_brtx_protocol_registered() -> Result<bool, String> {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let classes = hkcu.open_subkey("Software\\Classes").map_err(|e| e.to_string())?;
+    
+    match classes.open_subkey("brtx") {
+        Ok(brtx_key) => {
+            // Check if URL Protocol value exists
+            match brtx_key.get_value::<String, _>("URL Protocol") {
+                Ok(_) => Ok(true),
+                Err(_) => Ok(false),
+            }
+        }
+        Err(_) => Ok(false),
+    }
+}
+
+#[tauri::command]
 fn register_brtx_protocol() -> Result<(), String> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let classes = hkcu.open_subkey_with_flags("Software\\Classes", KEY_ALL_ACCESS).map_err(|e| e.to_string())?;
@@ -996,12 +1005,7 @@ fn register_brtx_protocol() -> Result<(), String> {
     
     // Set icon
     let icon_path = brtx_dir().join("brtx.ico");
-    if !icon_path.exists() {
-        if let Ok(mut resp) = get("https://bedrock.graphics/favicon.ico") {
-            let mut f = File::create(&icon_path).map_err(|e| e.to_string())?;
-            let _ = resp.copy_to(&mut f);
-        }
-    }
+    // Skipping network download of icon in sync context; path may be populated elsewhere.
     let _ = brtx_key.set_value("DefaultIcon", &format!("{},0", icon_path.display()));
     
     // Shell open command -> this app exe
@@ -1026,12 +1030,7 @@ fn register_rtpack_extension() -> Result<(), String> {
 
     // Icon file
     let icon_path = brtx_dir().join("rtpack.ico");
-    if !icon_path.exists() {
-        if let Ok(mut resp) = get("https://bedrock.graphics/favicon.ico") {
-            let mut f = File::create(&icon_path).map_err(|e| e.to_string())?;
-            let _ = resp.copy_to(&mut f);
-        }
-    }
+    // Skipping network download of icon in sync context; path may be populated elsewhere.
     let _ = app_key.set_value("DefaultIcon", &icon_path.to_string_lossy().to_string());
 
     // Shell open command -> this app exe
@@ -1119,19 +1118,28 @@ fn handle_deep_link(url: String) -> Result<ProtocolData, String> {
 }
 
 #[tauri::command]
-fn download_preset_by_uuid(uuid: String, selected_names: Vec<String>) -> Result<(), String> {
+async fn download_preset_by_uuid(app_handle: tauri::AppHandle, uuid: String, selected_names: Vec<String>) -> Result<(), String> {
     // Get preset info from API
     let url = format!("https://bedrock.graphics/api/preset/{}", uuid);
     let client = Client::new();
-    let response = client.get(&url).send().map_err(|e| e.to_string())?;
-    let preset: PackInfo = response.json().map_err(|e| e.to_string())?;
+    let response = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let preset: PackInfo = response.json().await.map_err(|e| e.to_string())?;
     
     // Use existing download and install logic
-    download_and_install_pack(preset.uuid, selected_names)
+    download_and_install_pack(app_handle, preset.uuid, selected_names).await
 }
 
 #[tauri::command]
-fn download_creator_settings(settings_hash: String, selected_names: Vec<String>) -> Result<(), String> {
+fn get_brtx_dir() -> Result<String, String> {
+    let dir = brtx_dir();
+    dir.to_str()
+        .ok_or_else(|| "Invalid path".to_string())
+        .map(|s| s.to_string())
+}
+
+
+#[tauri::command]
+async fn download_creator_settings(app_handle: tauri::AppHandle, settings_hash: String, selected_names: Vec<String>) -> Result<(), String> {
     let base_url = format!("https://bedrock.graphics/build/{}", settings_hash);
     let dir = brtx_dir().join("creator").join(&settings_hash);
     ensure_dir(&dir).map_err(|e| e.to_string())?;
@@ -1139,38 +1147,15 @@ fn download_creator_settings(settings_hash: String, selected_names: Vec<String>)
     let client = Client::new();
     
     // Download the three material.bin files directly
-    let files = [
-        ("stubs/RTXStub.material.bin", "RTXStub.material.bin"),
-        ("RTXPostFX.Tonemapping.material.bin", "RTXPostFX.Tonemapping.material.bin"),
-        ("RTXPostFX.Bloom.material.bin", "RTXPostFX.Bloom.material.bin"),
-    ];
-    
-    let dl = |url_path: &str, filename: &str| -> Result<(), String> {
-        let full_url = format!("{}/{}", base_url, url_path);
-        let file_path = dir.join(filename);
-        
-        // Check cache first
-        if let Some(cached_data) = get_cached_download(&full_url) {
-            fs::write(&file_path, cached_data).map_err(|e| e.to_string())?;
-            return Ok(());
-        }
-        
-        // Download fresh data
-        let mut resp = client.get(&full_url).send().map_err(|e| e.to_string())?;
-        let mut data = Vec::new();
-        resp.copy_to(&mut data).map_err(|e| e.to_string())?;
-        
-        // Cache the download
-        let _ = cache_download(&full_url, &data);
-        
-        // Save to file
-        fs::write(&file_path, data).map_err(|e| e.to_string())?;
-        Ok(())
-    };
-    
-    for (url_path, filename) in &files {
-        dl(url_path, filename)?;
-    }
+    let stub_url = format!("{}/{}", base_url, "stubs/RTXStub.material.bin");
+    let stub_path = dir.join("RTXStub.material.bin");
+    download_to_file_with_cache(&client, &stub_url, &stub_path).await?;
+    let tone_url = format!("{}/{}", base_url, "RTXPostFX.Tonemapping.material.bin");
+    let tone_path = dir.join("RTXPostFX.Tonemapping.material.bin");
+    download_to_file_with_cache(&client, &tone_url, &tone_path).await?;
+    let bloom_url = format!("{}/{}", base_url, "RTXPostFX.Bloom.material.bin");
+    let bloom_path = dir.join("RTXPostFX.Bloom.material.bin");
+    download_to_file_with_cache(&client, &bloom_url, &bloom_path).await?;
     
     // Install the downloaded materials
     let materials = vec![
@@ -1179,22 +1164,25 @@ fn download_creator_settings(settings_hash: String, selected_names: Vec<String>)
         dir.join("RTXPostFX.Bloom.material.bin"),
     ];
     
-    let all = list_installations()?;
+    let all = list_installations(app_handle.clone()).await?;
     let map: std::collections::HashMap<_, _> = all
         .into_iter()
         .map(|i| (i.install_location.clone(), i))
         .collect();
+    
+    // Avoid potential panic if the hash string is shorter than 8 characters
+    let short_hash = settings_hash.get(0..8).unwrap_or(&settings_hash);
         
     for install_location in selected_names {
         if let Some(ins) = map.get(&install_location) {
             let creator_pack = PackInfo {
-                name: format!("Creator Settings ({})", &settings_hash[..8]),
+                name: format!("Creator Settings ({})", short_hash),
                 uuid: format!("creator-{}", settings_hash),
                 stub: String::new(),
                 tonemapping: String::new(),
                 bloom: String::new(),
             };
-            copy_shader_files(&ins.install_location, &materials, &creator_pack)?;
+            copy_shader_files_async(&app_handle, &ins.install_location, &materials, &creator_pack).await?;
         } else {
             println!("⚠ Skipping unknown selection (no matching installation): {}", install_location);
         }
@@ -1246,9 +1234,9 @@ fn open_folder_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-fn uninstall_package(restore_initial: bool) -> Result<(), String> {
+async fn uninstall_package(app_handle: tauri::AppHandle, restore_initial: bool) -> Result<(), String> {
     if restore_initial {
-        let all = list_installations()?;
+        let all = list_installations(app_handle.clone()).await?;
         for ins in all {
             let backup = brtx_dir().join("backup").join(&ins.friendly_name);
             if backup.exists() {
@@ -1266,7 +1254,7 @@ fn uninstall_package(restore_initial: bool) -> Result<(), String> {
                         tonemapping: String::new(),
                         bloom: String::new(),
                     };
-                    copy_shader_files(&ins.install_location, &existing, &dummy_pack)?; 
+                    copy_shader_files_async(&app_handle, &ins.install_location, &existing, &dummy_pack).await?; 
                 }
             }
         }
@@ -1287,6 +1275,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_upload::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // Handle command line arguments for file associations and deep links
             let args: Vec<String> = std::env::args().collect();
@@ -1313,6 +1304,7 @@ pub fn run() {
             update_options_for_selected,
             register_rtpack_extension,
             register_brtx_protocol,
+            is_brtx_protocol_registered,
             check_iobit_unlocker,
             set_iobit_path,
             handle_file_drop,
@@ -1322,6 +1314,7 @@ pub fn run() {
             handle_deep_link,
             download_preset_by_uuid,
             download_creator_settings,
+            get_brtx_dir,
             validate_minecraft_path,
             open_folder_dialog,
         ])

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Settings } from "lucide-react";
 import { ToolbarSection } from "./ToolbarSection";
 import Logo from "./Logo";
+import pkg from "../../package.json";
 
 export default function AppHeader() {
   const { toolbarOpen, setToolbarOpen } = useAppStore();
@@ -14,6 +15,7 @@ export default function AppHeader() {
       </div>
 
       <div className="toolbar-right">
+        <span className="app-version">v{pkg.version}</span>
         {/* Menu button to show toolbar */}
         <button
           id="toolbar-menu-btn"

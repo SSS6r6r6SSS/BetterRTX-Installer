@@ -6,6 +6,7 @@ export default function Button({
   size = null,
   disabled = false,
   block = false,
+  extra = null,
   ...rest
 }: {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export default function Button({
   size?: "sm" | "md" | "lg" | null;
   disabled?: boolean;
   block?: boolean;
+  extra?: string | null;
   [key: string]: any;
 }) {
   return (
@@ -25,7 +27,8 @@ export default function Button({
         size === "md" && "btn--md",
         size === "lg" && "btn--lg",
         block && "w-full",
-        !disabled && "cursor-pointer"
+        !disabled && "cursor-pointer",
+        extra
       )}
       type="button"
       disabled={disabled}

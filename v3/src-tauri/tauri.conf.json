@@ -16,6 +16,10 @@
         "title": "BetterRTX Installer",
         "width": 800,
         "height": 600,
+        "minWidth": 512,
+        "minHeight": 480,
+        "resizable": true,
+        "theme": "Dark",
         "dragDropEnabled": true
       }
     ],

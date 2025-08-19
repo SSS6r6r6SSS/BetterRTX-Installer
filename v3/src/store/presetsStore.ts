@@ -54,6 +54,7 @@ export const usePresetsStore = create<PresetsStore>((set) => ({
       );
 
       for (const installPath of selectedInstallations) {
+        addConsoleOutput(t("log_installing_to", { installPath }));
         await invoke("download_and_install_pack", { uuid, selectedNames: [installPath] });
         addConsoleOutput(t("log_installed_to", { installPath }));
       }
@@ -100,6 +101,7 @@ export const usePresetsStore = create<PresetsStore>((set) => ({
       );
 
       for (const installPath of selectedInstallations) {
+        addConsoleOutput(t("log_installing_to", { installPath }));
         await invoke("download_and_install_pack", { uuid, selectedNames: [installPath] });
         addConsoleOutput(t("log_installed_to", { installPath }));
       }

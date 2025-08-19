@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { cx } from "classix";
 import Button from "../ui/Button";
 import BlockPath from "../ui/BlockPath";
+import PresetIcon from "./PresetIcon";
+import { ChevronDown } from "lucide-react";
 
 export interface PackInfo {
   name: string;
@@ -53,15 +55,24 @@ export const PresetCard: React.FC<PresetCardProps> = ({
       onClick={handleCardClick}
     >
       <div className="flex flex-col w-full">
-        <img
-          className="preset-icon w-full h-auto"
-          src={`https://cdn.jsdelivr.net/gh/BetterRTX/presets@main/data/${preset.uuid}/icon.png`}
-          alt={`${preset.name} icon`}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
-        <h3 className="preset-header">{preset.name}</h3>
+        <PresetIcon uuid={preset.uuid} />
+        <div className="preset-header">
+          <h3 className="preset-title">{preset.name}</h3>
+          <button
+            type="button"
+            className="preset-header__toggle"
+            aria-expanded={selected}
+            aria-label={t("toggle_details", "Toggle details")}
+          >
+            <ChevronDown
+              size={16}
+              className={cx(
+                "preset-header__chevron",
+                selected && "preset-header__chevron--rotated"
+              )}
+            />
+          </button>
+        </div>
       </div>
       <div
         className={cx(
@@ -99,14 +110,18 @@ export const PresetCard: React.FC<PresetCardProps> = ({
           </dl>
         </div>
       </div>
-      <Button
-        className={cx("btn", !isInstalling && "btn--primary", "h-min sm:w-fit")}
-        onClick={handleInstallClick}
-        disabled={isInstalling}
-        data-uuid={preset.uuid}
-      >
-        {isInstalling ? t("installing") : t("install")}
-      </Button>
+      <div className="preset-card__footer">
+        <Button
+          theme={!isInstalling ? "primary" : null}
+          block
+          extra="install-preset-btn"
+          onClick={handleInstallClick}
+          disabled={isInstalling}
+          data-uuid={preset.uuid}
+        >
+          {isInstalling ? t("installing") : t("install")}
+        </Button>
+      </div>
     </div>
   );
 };

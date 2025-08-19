@@ -18,25 +18,25 @@ export const SideNav: React.FC<SideNavProps> = ({ className, children }) => {
       id: "presets" as const,
       label: t("tab_presets"),
       icon: Package,
-      description: "Browse and install RTX presets",
+      description: t("presets_title"),
     },
     {
       id: "creator" as const,
       label: "Creator",
       icon: Palette,
-      description: "Create custom presets",
+      description: t("creator_title"),
     },
     {
       id: "actions" as const,
       label: t("tab_actions"),
       icon: Wrench,
-      description: "Quick actions and tools",
+      description: t("actions_title"),
     },
     {
       id: "installations" as const,
       label: t("tab_installations"),
       icon: Home,
-      description: "Manage your Minecraft installations",
+      description: t("installations_title"),
     },
   ];
 

@@ -1,8 +1,7 @@
 import React from "react";
 import { cx } from "classix";
 import { useTranslation } from "react-i18next";
-import PresetIcon from "../PresetIcon";
-import BlockPath from "../ui/BlockPath";
+import PresetIcon from "../presets/PresetIcon";
 
 export interface Installation {
   FriendlyName: string;
@@ -21,6 +20,11 @@ interface InstallationCardProps {
   onSelectionChange?: (path: string, selected: boolean) => void;
 }
 
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString().replace(/\//g, "-");
+};
+
 export const InstallationCard: React.FC<InstallationCardProps> = ({
   installation,
   selected = false,
@@ -34,29 +38,19 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
   };
 
   const presetIcon = installation.installed_preset ? (
-    <PresetIcon uuid={installation.installed_preset.uuid} extra="max-w-24" />
+    <PresetIcon uuid={installation.installed_preset.uuid} extra="max-w-24 ml-2" />
   ) : null;
 
   return (
     <div
       className={cx(
         "installation-card",
-        selected
-          ? "selected bg-brand-accent/5 border-brand-accent-600"
-          : "bg-app-panel",
-        installation.Preview ? "preview order-2" : ""
+        selected && "selected",
+        installation.Preview && "preview order-2"
       )}
       data-path={installation.InstallLocation}
       onClick={handleCardClick}
     >
-      <div className="flex flex-col w-full">
-        {presetIcon || (
-          <div className="installation-placeholder w-full h-32 bg-app-border/20 rounded flex items-center justify-center">
-            <span className="text-app-muted text-sm">
-              {installation.Preview ? "Preview" : "Minecraft"}
-            </span>
-          </div>
-        )}
         <h3
           className="installation-header"
           title={installation.InstallLocation}
@@ -66,44 +60,46 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
             <span className="preview-badge ml-2">Preview</span>
           )}
         </h3>
-      </div>
 
-      <div
-        className={cx(
-          "installation-details",
-          "overflow-hidden",
-          !selected ? "max-h-0" : "max-h-full"
-        )}
-      >
-        <div className="flex flex-col gap-2 text-xs">
-          {installation.installed_preset ? (
-            <div className="installed-preset-info">
-              <p className="text-sm font-medium">
-                {t("current_preset", {
-                  name: installation.installed_preset.name,
-                })}
-              </p>
-              <p className="text-xs text-app-muted">
-                Installed:{" "}
-                {new Date(
-                  installation.installed_preset.installed_at
-                ).toLocaleDateString()}
-              </p>
-            </div>
-          ) : (
-            <p className="no-preset-info text-sm text-app-muted">
-              {t("no_preset_installed")}
-            </p>
+        
+
+        <div
+          className={cx(
+            "installation-details",
+            "overflow-hidden items-center py-2"
           )}
-
-          <div>
-            <dt className="font-medium text-app-muted">Installation Path</dt>
-            <dd>
-              <BlockPath path={installation.InstallLocation} />
-            </dd>
+        >
+          {presetIcon || (
+          <div className="installation-placeholder w-full h-32 bg-app-border/20 rounded flex items-center justify-center">
+            <span className="text-app-muted text-sm">
+              {installation.Preview ? "Preview" : "Minecraft"}
+            </span>
           </div>
+        )}
+            {installation.installed_preset ? (
+              <div className="installed-preset-info">
+                <h4 className="text-xs font-medium text-app-muted uppercase tracking-wider mb-0.5 whitespace-nowrap">
+                  {t("current_preset")}
+                </h4>
+                <p>{installation.installed_preset.name}</p>
+                <time className="text-xs text-app-muted whitespace-nowrap">
+                  {t("install_date", {
+                    date: formatDate(installation.installed_preset.installed_at),
+                  })}
+                </time>
+              </div>
+            ) : (
+              <p className="no-preset-info text-sm text-app-muted">
+                {t("no_preset_installed")}
+              </p>
+            )}
         </div>
-      </div>
+
+      <footer className="installation-footer flex items-center justify-between overflow-auto w-full">
+        <p className="text-xs text-app-muted whitespace-nowrap flex-1 truncate min-w-0 max-w-[calc(100vw-20rem)]" title={installation.InstallLocation}>
+          {installation.InstallLocation}
+        </p>
+      </footer>
     </div>
   );
 };

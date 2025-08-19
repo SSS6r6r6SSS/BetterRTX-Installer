@@ -21,12 +21,8 @@ export const BlockPath: React.FC<BlockPathProps> = ({
   openInNewTab = true,
   className = "",
 }) => {
-  const content = (
-    <span className={`preset-stub-link ${className}`}>{path ?? href}</span>
-  );
-
   return (
-    <div className="preset-stub-container select-all selection:bg-minecraft-slate-900 selection:text-minecraft-slate-50 scrollbar">
+    <div className="preset-stub-container select-all selection:bg-minecraft-slate-900 selection:text-minecraft-slate-50 scrollbar min-w-0 w-full">
       {href ? (
         <a
           href={href}
@@ -37,7 +33,7 @@ export const BlockPath: React.FC<BlockPathProps> = ({
           {path ?? href}
         </a>
       ) : (
-        content
+        <span className={`preset-stub-link ${className} no-underline cursor-default truncate overflow-hidden whitespace-nowrap`}>{path ?? href}</span>
       )}
     </div>
   );
