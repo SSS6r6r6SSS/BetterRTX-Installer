@@ -39,7 +39,7 @@ export default function InstallationNav() {
           }}
           type="button"
         >
-          {preset.installation.installed_preset?.is_creator ? <CreatorIcon /> : <PresetIcon uuid={preset.uuid} extra="max-w-16 h-12" />}
+          {preset.installation.installed_preset?.is_creator || preset.uuid === "material-files" ? <CreatorIcon /> : <PresetIcon uuid={preset.uuid} extra="max-w-16 h-12" />}
           <div className="flex flex-col items-start gap-1 group">
             <h3
               className="m-0 leading-snug text-sm font-semibold text-app-fg group-hover:underline underline-offset-4"
@@ -47,7 +47,7 @@ export default function InstallationNav() {
             >
               {preset.installation.FriendlyName}
             </h3>
-            <span className="text-xs opacity-75 group-hover:opacity-100 transition-opacity">{preset.name}</span>
+            <span className="text-xs opacity-75 group-hover:opacity-100 transition-opacity max-w-[20ch] overflow-hidden text-ellipsis">{preset.name}</span>
           </div>
         </button>
       ))}

@@ -17,7 +17,7 @@ export default function PresetIcon({
         extra
       )}>
         <img
-          className="preset-icon transition-all @3xs:mx-0 mx-2 @3xs:rounded-t-md @3xs:rounded-b-lg object-cover mb-0.5 @3xs:mb-1 @2xs:mb-1.5 w-full h-full border border-white/30 blend-overlay shadow-none outline outline-black/25 relative inset-0 z-20"
+          className="preset-icon select-none transition-all @3xs:mx-0 mx-2 @3xs:rounded-t-md @3xs:rounded-b-lg object-cover mb-0.5 @3xs:mb-1 @2xs:mb-1.5 w-full h-full border border-white/30 blend-overlay shadow-none outline outline-black/25 relative inset-0 z-20"
           src={`https://cdn.jsdelivr.net/gh/BetterRTX/presets@main/data/${uuid}/icon.png`}
           alt={`${uuid} icon`}
           onError={(e) => {
@@ -26,7 +26,7 @@ export default function PresetIcon({
           width={iconSize}
           height={iconSize}
         />
-        <div className="absolute transition-opacity opacity-75 group-hover:opacity-100 inset-0 w-full h-full object-cover rounded-md border border-black/15 from-black/25 via-white/75 to-white/30 group-hover:from-white/15 group-hover:via-white/50 group-hover:to-white/50 z-10 bg-radial">
+        <div className="absolute select-none transition-opacity opacity-75 group-hover:opacity-100 inset-0 w-full h-full object-cover rounded-md border border-black/15 from-black/25 via-white/75 to-white/30 group-hover:from-white/15 group-hover:via-white/50 group-hover:to-white/50 z-10 bg-radial">
           <img
             className="absolute inset-0 -top-2 w-full h-full object-cover rounded-lg blur-sm brightness-75 group-hover:brightness-200 transition-all"
             src={`https://cdn.jsdelivr.net/gh/BetterRTX/presets@main/data/${uuid}/icon.png`}

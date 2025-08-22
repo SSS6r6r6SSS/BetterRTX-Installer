@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
@@ -17,7 +17,7 @@ import InstallationsTab from "./installations/InstallationsTab";
 import DropzoneIndicator from "./ui/DropzoneIndicator";
 import { cx } from "classix";
 
-export const App: React.FC = () => {
+const App: React.FC = () => {
   const [rtpackDialogOpen, setRtpackDialogOpen] = useState(false);
   const [rtpackPath, setRtpackPath] = useState("");
   const [deepLinkDialogOpen, setDeepLinkDialogOpen] = useState(false);
@@ -31,6 +31,31 @@ export const App: React.FC = () => {
     refreshInstallations,
     refreshPresets,
   } = useAppStore();
+
+  const handleRtpackDialogClose = useCallback(() => {
+    setRtpackDialogOpen(false);
+  }, []);
+
+  const handleDeepLinkDialogClose = useCallback(() => {
+    setDeepLinkDialogOpen(false);
+  }, []);
+
+  const tabClasses = useMemo(() => {
+    const getBaseClass = (tabName: string) => {
+      const isActive = activeTab === tabName;
+      return cx(
+        "tab-panel w-full",
+        isActive ? (animateTabs ? "block tab-view" : "block") : "hidden"
+      );
+    };
+
+    return {
+      installations: getBaseClass("installations"),
+      presets: getBaseClass("presets"),
+      actions: getBaseClass("actions"),
+      creator: getBaseClass("creator"),
+    };
+  }, [activeTab, animateTabs]);
 
   useEffect(() => {
     refreshInstallations();
@@ -126,47 +151,27 @@ export const App: React.FC = () => {
           <main className="app-content">
             <div className="main-content">
               {/* Tab Content */}
-              <div className="tab-content px-2 flex flex-col gap-2">
+              <div className="tab-content flex flex-col gap-2">
                 <div
-                  className={cx(
-                    "tab-panel w-full",
-                    activeTab === "installations"
-                      ? (animateTabs ? "block tab-view" : "block")
-                      : "hidden"
-                  )}
+                  className={tabClasses.installations}
                 >
                   <InstallationsTab />
                 </div>
 
                 <div
-                  className={cx(
-                    "tab-panel w-full",
-                    activeTab === "presets"
-                      ? (animateTabs ? "block tab-view" : "block")
-                      : "hidden"
-                  )}
+                  className={tabClasses.presets}
                 >
                   <PresetsTab />
                 </div>
 
                 <div
-                  className={cx(
-                    "tab-panel w-full",
-                    activeTab === "actions"
-                      ? (animateTabs ? "block tab-view" : "block")
-                      : "hidden"
-                  )}
+                  className={tabClasses.actions}
                 >
                   <ActionsTab />
                 </div>
 
                 <div
-                  className={cx(
-                    "tab-panel w-full",
-                    activeTab === "creator"
-                      ? (animateTabs ? "block tab-view" : "block")
-                      : "hidden"
-                  )}
+                  className={tabClasses.creator}
                 >
                   <CreatorTab />
                 </div>
@@ -184,16 +189,18 @@ export const App: React.FC = () => {
         <RtpackDialog
           isOpen={rtpackDialogOpen}
           rtpackPath={rtpackPath}
-          onClose={() => setRtpackDialogOpen(false)}
+          onClose={handleRtpackDialogClose}
         />
 
         {/* Deep Link Dialog */}
         <DeepLinkDialog
           isOpen={deepLinkDialogOpen}
           deepLinkUrl={deepLinkUrl}
-          onClose={() => setDeepLinkDialogOpen(false)}
+          onClose={handleDeepLinkDialogClose}
         />
       </div>
     </div>
   );
 };
+
+export const MemoizedApp = memo(App);

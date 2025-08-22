@@ -58,7 +58,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
     onSelectionChange?.(installation.InstallLocation, newSelected);
   };
 
-  const presetIcon = installation.installed_preset && !installation.installed_preset.is_creator ? (
+  const presetIcon = installation.installed_preset && !installation.installed_preset.is_creator && installation.installed_preset.uuid !== "material-files" ? (
     <div className="w-24 mb-1 mx-2"><PresetIcon uuid={installation.installed_preset.uuid} extra="max-w-24 ml-2" /></div>
   ) : null;
 
@@ -73,7 +73,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
       onClick={handleCardClick}
     >
         <h3
-          className="installation-header"
+          className="installation-header select-none"
           title={installation.InstallLocation}
         >
           {!isSideloadedInstallation(installation) && (
@@ -109,7 +109,7 @@ export const InstallationCard: React.FC<InstallationCardProps> = ({
                 <h4 className="text-xs font-medium text-app-muted uppercase tracking-wider mb-0.5 whitespace-nowrap">
                   {t("current_preset")}
                 </h4>
-                <p>{installation.installed_preset.name}</p>
+                <p className="max-w-[20ch] sm:max-w-[30ch] overflow-hidden text-ellipsis">{installation.installed_preset.name}</p>
                 <time className="text-xs text-app-muted whitespace-nowrap">
                   {t("install_date", {
                     date: formatDate(installation.installed_preset.installed_at),

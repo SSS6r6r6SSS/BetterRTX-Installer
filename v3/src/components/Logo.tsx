@@ -2,8 +2,8 @@ import { cx } from "classix";
 const Logo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     className={cx(
-      "hover:animate-rainbow",
-      "group h-full w-32 max-w-52 overflow-hidden rounded-xs border border-transparent fill-yellow-300 shadow-2xs transition-all duration-200 ease-in active:shadow-lg"
+      "hover:rainbow-animate",
+      "group h-full w-32 max-w-52 rounded-sm overflow-hidden border border-transparent fill-yellow-300 shadow-2xs transition-all duration-200 ease-in active:shadow-lg cursor-pointer"
     )}
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 975.14 191.5"

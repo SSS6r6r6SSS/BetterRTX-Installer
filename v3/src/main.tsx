@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { App } from "./components/App";
+import { MemoizedApp as App } from "./components/App";
 import "@fontsource-variable/martian-mono";
 import "./styles.css";
 import "./i18n";

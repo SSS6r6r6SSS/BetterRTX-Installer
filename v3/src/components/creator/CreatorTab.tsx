@@ -27,6 +27,8 @@ export default function CreatorTab() {
     selectedNames: string[];
     presetName: string;
   } | null>(null);
+  const [selectedRtpack, setSelectedRtpack] = useState<string>("");
+  const [isRtpackModalOpen, setIsRtpackModalOpen] = useState(false);
 
   const handleInstall = async (selectedNames: string[]) => {
     if (selectedNames.length === 0) {
@@ -165,33 +167,50 @@ export default function CreatorTab() {
   const handleFileUpload = async () => {
     setIsProcessing(true);
     try {
-      // Use Tauri dialog plugin to select file
-      const filePath = await open({
-        title: "Select .material.bin file",
+      // Use Tauri dialog plugin to select multiple files
+      const filePaths = await open({
+        title: "Select .material.bin files",
         filters: [{
           name: "Material Files",
           extensions: ["material.bin"]
         }],
-        multiple: false
+        multiple: true
       });
 
-      if (!filePath) {
+      if (!filePaths || filePaths.length === 0) {
         setIsProcessing(false);
         return;
       }
 
-      // Use Tauri command to upload the file (handles permissions properly)
-      const filename = await invoke("upload_material_file", {
-        sourcePath: filePath
-      }) as string;
+      // Process each selected file
+      const uploadedFilenames: string[] = [];
+      for (const filePath of filePaths) {
+        try {
+          // Use Tauri command to upload the file (handles permissions properly)
+          const filename = await invoke("upload_material_file", {
+            sourcePath: filePath
+          }) as string;
+          uploadedFilenames.push(filename);
+        } catch (error) {
+          addMessage({
+            message: t("creator_upload_error_single", { 
+              filename: filePath.split(/[\\\/]/).pop() || filePath,
+              error 
+            }),
+            type: "error",
+          });
+        }
+      }
 
-      addMessage({
-        message: t("creator_file_uploaded", { filename }),
-        type: "success",
-      });
+      if (uploadedFilenames.length > 0) {
+        addMessage({
+          message: t("creator_files_uploaded", { count: uploadedFilenames.length }),
+          type: "success",
+        });
 
-      // Add to uploaded files list
-      setUploadedFiles(prev => [...prev, filename]);
+        // Add to uploaded files list
+        setUploadedFiles(prev => [...prev, ...uploadedFilenames]);
+      }
       
     } catch (error) {
       addMessage({
@@ -211,21 +230,111 @@ export default function CreatorTab() {
     });
   };
 
+  const handleRtpackUpload = async () => {
+    setIsProcessing(true);
+    try {
+      // Use Tauri dialog plugin to select .rtpack file
+      const filePath = await open({
+        title: "Select .rtpack file",
+        filters: [{
+          name: "RTX Pack Files",
+          extensions: ["rtpack"]
+        }],
+        multiple: false
+      });
+
+      if (!filePath) {
+        setIsProcessing(false);
+        return;
+      }
+
+      // Store the selected rtpack path
+      setSelectedRtpack(filePath);
+      
+      addMessage({
+        message: t("creator_rtpack_selected", { filename: filePath.split(/[\\\/]/).pop() || filePath }),
+        type: "success",
+      });
+
+      // Immediately open the installation modal
+      setIsRtpackModalOpen(true);
+      
+    } catch (error) {
+      addMessage({
+        message: t("creator_rtpack_error", { error }),
+        type: "error",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRtpackInstall = async (selectedNames: string[]) => {
+    if (selectedNames.length === 0) {
+      addMessage({
+        message: t("status_select_installation_warning"),
+        type: "error",
+      });
+      return;
+    }
+
+    if (!selectedRtpack) {
+      addMessage({
+        message: t("creator_no_rtpack_selected"),
+        type: "error",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    setIsRtpackModalOpen(false);
+    const { refreshInstallations, addConsoleOutput } = useAppStore.getState();
+    
+    try {
+      const filename = selectedRtpack.split(/[\\\/]/).pop() || selectedRtpack;
+      addConsoleOutput(t("log_installing_rtpack", { name: filename }));
+      
+      await invoke("install_from_rtpack", {
+        rtpackPath: selectedRtpack,
+        selectedNames,
+      });
+
+      addMessage({
+        message: t("creator_rtpack_install_success", { name: filename }),
+        type: "success",
+      });
+      
+      addConsoleOutput(t("log_rtpack_install_complete"));
+      // Refresh installations to show the new installation
+      await refreshInstallations();
+      // Clear selected rtpack after successful installation
+      setSelectedRtpack("");
+    } catch (error) {
+      addMessage({
+        message: t("creator_rtpack_install_error", { error }),
+        type: "error",
+      });
+      addConsoleOutput(t("log_rtpack_install_error", { error }));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const isValidHash = settingsHash.trim().length >= 8;
 
   return (
     <section className="creator-container">
       <div className="section-toolbar mb-4">
-        <div className="toolbar-title">
-          <h2 className="text-lg font-semibold">{t("creator_title")}</h2>
+        <div className="toolbar-title flex flex-wrap gap-2">
+          <h2 className="text-lg font-semibold mr-4">{t("creator_title")}</h2>
           <span className="text-sm opacity-75">
             {t("creator_subtitle")}
           </span>
         </div>
       </div>
 
-      <div className="creator-content space-y-6">
-        <div className="panel">
+      <div className="creator-content">
+        <div className="panel col-span-2">
           <div className="panel__header">
             <h3 className="panel__title">{t("creator_install_title")}</h3>
           </div>
@@ -328,6 +437,47 @@ export default function CreatorTab() {
             </div>
           </div>
         </div>
+
+        <div className="panel">
+          <div className="panel__header">
+            <h3 className="panel__title">{t("creator_rtpack_title")}</h3>
+          </div>
+          <div className="panel__body">
+            <div className="space-y-4">
+              <p className="text-sm text-app-muted">
+                {t("creator_rtpack_subtitle")}
+              </p>
+              
+              <div className="field">
+                <label className="field__label">
+                  {t("creator_select_rtpack")}
+                </label>
+                <div className="field__control">
+                  <Button
+                    type="button"
+                    theme="secondary"
+                    onClick={handleRtpackUpload}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? t("creator_installing") : t("creator_browse_rtpack")}
+                  </Button>
+                </div>
+                <p className="text-xs text-app-muted mt-1">
+                  {t("creator_rtpack_help")}
+                </p>
+              </div>
+              
+              {selectedRtpack && (
+                <div className="selected-rtpack">
+                  <h4 className="text-sm font-medium mb-2">{t("creator_selected_rtpack")}</h4>
+                  <div className="p-2 bg-app-surface rounded border">
+                    <span className="text-sm font-mono">{selectedRtpack.split(/[\\\/]/).pop() || selectedRtpack}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
       <InstallationInstanceModal
         isOpen={isModalOpen}
@@ -364,6 +514,17 @@ export default function CreatorTab() {
         onConfirm={handleMaterialNameConfirm}
         defaultName={pendingMaterialData?.presetName || ""}
         isProcessing={isProcessing}
+      />
+      <InstallationInstanceModal
+        isOpen={isRtpackModalOpen}
+        onClose={() => {
+          setIsRtpackModalOpen(false);
+          setSelectedRtpack("");
+        }}
+        installations={installations}
+        presetName={selectedRtpack ? `${selectedRtpack.split(/[\\\/]/).pop() || selectedRtpack}` : "RTX Pack"}
+        onInstall={handleRtpackInstall}
+        isInstalling={isProcessing}
       />
     </section>
   );

@@ -78,8 +78,8 @@ export default function PresetsTab() {
     <section className="presets-container">
       <div className="section-toolbar flex justify-between items-center mb-4">
         <div className="toolbar-title">
-          <h2 className="text-lg font-semibold">{t("presets_title")}</h2>
-          <span className="text-sm opacity-75">
+          <h2 className="text-lg font-semibold select-none cursor-default">{t("presets_title")}</h2>
+          <span className="text-sm opacity-75 select-none cursor-default">
             {t("presets_loaded_count", { count: filteredPresets.length })} /{" "}
             {presets.length}
           </span>

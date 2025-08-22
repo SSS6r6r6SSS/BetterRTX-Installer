@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Button from "../ui/Button";
 import SelectInstallationsDialog from "../SelectInstallationsDialog";
 import { CheckCircle } from "lucide-react";
+import { OptionsDialog } from "../OptionsDialog";
 
 type ModalType = "dlss" | "update" | "backup" | "uninstall";
 
@@ -23,6 +24,7 @@ export default function ActionsTab() {
   const [actionType, setActionType] = useState<ModalType | null>(
     null
   );
+  const [optionsDialogOpen, setOptionsDialogOpen] = useState(false);
 
 
   const openSelectDialog = (type: ModalType): void => {
@@ -130,23 +132,24 @@ export default function ActionsTab() {
           <div className="flex items-center justify-between w-full">
             <div className="flex flex-col flex-grow-1 w-full">
               <h3 className="font-semibold mb-2 select-none cursor-default">
-                {t("action_update_options_title")}
+                {t("action_graphics_options_title", "Graphics Options Editor")}
               </h3>
               <p className="text-sm opacity-75 select-none cursor-default">
-                {t("action_update_options_desc")}
+                {t("action_graphics_options_desc", "Edit Minecraft graphics settings directly from options.txt")}
               </p>
             </div>
             <div className="ml-4">
               <Button
                 theme="primary"
                 size="md"
-                onClick={() => openSelectDialog("update")}
+                onClick={() => setOptionsDialogOpen(true)}
               >
-                {t("update")}
+                {t("edit_options", "Edit Options")}
               </Button>
             </div>
           </div>
         </div>
+
         <div className="action-btn p-4 rounded-lg border bg-app-panel border-app-border w-full">
           <div className="flex items-center justify-between w-full">
             <div className="flex flex-col flex-grow-1 w-full">
@@ -201,6 +204,7 @@ export default function ActionsTab() {
             </div>
           </div>
         </div>
+        
       </div>
       <SelectInstallationsDialog
         isOpen={actionDialogOpen}
@@ -258,6 +262,10 @@ export default function ActionsTab() {
             : "uninstalling"
         }
         onConfirm={handleActionConfirm}
+      />
+      <OptionsDialog
+        isOpen={optionsDialogOpen}
+        onClose={() => setOptionsDialogOpen(false)}
       />
     </section>
   );

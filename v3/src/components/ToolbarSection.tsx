@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "../store/appStore";
 import { useTranslation } from "react-i18next";
+import Button from "./ui/Button";
 
 export const ToolbarSection: React.FC = () => {
   const { t } = useTranslation();
@@ -18,10 +19,6 @@ export const ToolbarSection: React.FC = () => {
     refreshPresets,
     clearCache,
   } = useAppStore();
-
-  const handleSettingsClick = () => addConsoleOutput(t("log_settings_clicked"));
-  const handleHelpClick = () => addConsoleOutput(t("log_help_clicked"));
-  const handleAboutClick = () => addConsoleOutput(t("log_about_clicked"));
 
   const handleRefreshClick = () => {
     addConsoleOutput(t("log_refreshing_installations"));
@@ -38,53 +35,25 @@ export const ToolbarSection: React.FC = () => {
     clearCache();
   };
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border bg-app-panel border-app-border text-app-fg">
-      <div className="flex gap-2">
-        <button
-          onClick={handleSettingsClick}
-          className="inline-flex items-center gap-2 p-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-          title="Settings"
-        >
-          <Settings size={16} />
-        </button>
-        <button
-          onClick={handleHelpClick}
-          className="inline-flex items-center gap-2 p-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-          title="Help"
-        >
-          <HelpCircle size={16} />
-        </button>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={handleRefreshClick}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-        >
-          <RefreshCw size={16} />
-          <span>Refresh</span>
-        </button>
-        <button
-          onClick={handleForceRefreshClick}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-        >
-          <RefreshCcw size={16} />
-          <span>Force Refresh</span>
-        </button>
-        <button
-          onClick={handleClearCacheClick}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-        >
-          <Trash2 size={16} />
-          <span>Clear Cache</span>
-        </button>
-        <button
-          onClick={handleAboutClick}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition-colors cursor-pointer hover:bg-opacity-80 bg-app-bg border-app-border text-app-fg"
-        >
-          <Info size={16} />
-          <span>About</span>
-        </button>
-      </div>
+    <div className="flex items-start gap-2 justify-between px-2 pb-2">
+        <Button onClick={handleRefreshClick} size="sm" extra="h-min">
+          <div className="flex gap-2 items-center">
+            <RefreshCw size={16} />
+            <span>{t("refresh_installations")}</span>
+          </div>
+        </Button>
+        <Button onClick={handleForceRefreshClick} size="sm" extra="h-min">
+          <div className="flex gap-2 items-center">
+            <RefreshCcw size={16} />
+            <span>{t("refresh_api")}</span>
+          </div>
+        </Button>
+        <Button onClick={handleClearCacheClick} size="sm" extra="h-min">
+          <div className="flex gap-2 items-center">
+            <Trash2 size={16} />
+            <span>{t("clear_cache")}</span>
+          </div>
+        </Button>
     </div>
   );
 };

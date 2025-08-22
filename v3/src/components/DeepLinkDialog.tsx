@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import Button from "./ui/Button";
 import { useAppStore } from "../store/appStore";
 import { useStatusStore } from "../store/statusStore";
+import { X } from "lucide-react";
 
 interface DeepLinkDialogProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ export const DeepLinkDialog: React.FC<DeepLinkDialogProps> = ({
             onClick={onClose}
             disabled={isProcessing}
           >
-            ×
+            <X className="size-6" />
           </button>
         </div>
 
