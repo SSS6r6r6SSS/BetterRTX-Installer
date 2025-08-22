@@ -1,11 +1,8 @@
 import React from "react";
 import {
-  Settings,
-  HelpCircle,
   RefreshCw,
   RefreshCcw,
   Trash2,
-  Info,
 } from "lucide-react";
 import { useAppStore } from "../store/appStore";
 import { useTranslation } from "react-i18next";

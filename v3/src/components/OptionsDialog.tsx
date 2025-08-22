@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import Button from './ui/Button';
 import Switch from './ui/Switch';
-import { Loader2, Settings, Save, RefreshCw, X, Hash, Search, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, RefreshCw, X, Hash, Search, AlertTriangle } from 'lucide-react';
 
 interface MinecraftOptions {
   gfx_options: Record<string, string>;

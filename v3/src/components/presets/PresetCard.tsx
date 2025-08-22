@@ -55,8 +55,8 @@ export const PresetCard: React.FC<PresetCardProps> = ({
     >
       <div className="flex flex-col w-full">
         <PresetIcon uuid={preset.uuid} />
-        <div className="preset-header">
-          <h3 className="preset-title">{preset.name}</h3>
+        <div className="preset-header cursor-pointer">
+          <h3 className="preset-title select-none">{preset.name}</h3>
           <button
             type="button"
             className="preset-header__toggle"
@@ -66,7 +66,7 @@ export const PresetCard: React.FC<PresetCardProps> = ({
             <ChevronDown
               size={16}
               className={cx(
-                "preset-header__chevron",
+                "preset-header__chevron cursor-pointer",
                 selected && "preset-header__chevron--rotated"
               )}
             />

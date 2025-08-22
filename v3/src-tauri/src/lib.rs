@@ -756,8 +756,8 @@ async fn install_from_rtpack(app_handle: tauri::AppHandle, rtpack_path: String, 
         if let Some(ins) = map.get(&install_location) {
             // Create a dummy pack for material file installation
             let dummy_pack = PackInfo {
-                name: "Material Files".to_string(),
-                uuid: "material-files".to_string(),
+                name: pack_name.clone().chars().take(20).collect(),
+                uuid: format!("material-files-{}", chrono::Utc::now().timestamp()),
                 stub: String::new(),
                 tonemapping: String::new(),
                 bloom: String::new(),
@@ -1053,6 +1053,149 @@ fn check_iobit_unlocker() -> Result<String, String> {
     } else {
         Err("IObit Unlocker not found. Please install IObit Unlocker to modify WindowsApps installations.".into())
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct MinecraftOptions {
+    gfx_options: HashMap<String, String>,
+    instance_name: String,
+    options_path: String,
+}
+
+#[tauri::command]
+async fn get_minecraft_options() -> Result<Vec<MinecraftOptions>, String> {
+    let local_app_data = local_app_data();
+    let packages_dir = local_app_data.join("Packages");
+    
+    let minecraft_packages = [
+        ("Microsoft.MinecraftUWP_8wekyb3d8bbwe", "Minecraft"),
+        ("Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe", "Minecraft Preview"),
+    ];
+    
+    // Define which options are graphics-related
+    let graphics_related_keys = [
+        "gfx_", // All gfx_ prefixed options
+        "show_advanced_video_settings",
+        "raytracing_viewdistance",
+        "graphics_mode",
+        "graphics_mode_switch",
+        "gfx_viewdistance",
+        "gfx_particleviewdistance",
+        "gfx_viewbobbing",
+        "gfx_fancygraphics",
+        "gfx_transparentleaves",
+        "gfx_smoothlighting",
+        "gfx_fancyskies",
+        "gfx_msaa",
+        "gfx_texel_aa",
+        "gfx_multithreaded_renderer",
+        "gfx_vsync",
+        "frame_pacing_enabled",
+    ];
+    
+    let mut all_options = Vec::new();
+    
+    for (package_name, friendly_name) in minecraft_packages {
+        let options_path = packages_dir
+            .join(package_name)
+            .join("LocalState")
+            .join("games")
+            .join("com.mojang")
+            .join("minecraftpe")
+            .join("options.txt");
+        
+        if options_path.exists() {
+            match tokio::fs::read_to_string(&options_path).await {
+                Ok(content) => {
+                    let mut gfx_options = HashMap::new();
+                    
+                    for line in content.lines() {
+                        if let Some((key, value)) = line.split_once(':') {
+                            // Check if this key is graphics-related
+                            let is_graphics = graphics_related_keys.iter().any(|&pattern| {
+                                if pattern.ends_with('_') {
+                                    key.starts_with(pattern)
+                                } else {
+                                    key == pattern
+                                }
+                            });
+                            
+                            if is_graphics {
+                                gfx_options.insert(key.to_string(), value.to_string());
+                            }
+                        }
+                    }
+                    
+                    all_options.push(MinecraftOptions {
+                        gfx_options,
+                        instance_name: friendly_name.to_string(),
+                        options_path: options_path.to_string_lossy().to_string(),
+                    });
+                }
+                Err(e) => {
+                    eprintln!("Failed to read options file for {}: {}", friendly_name, e);
+                }
+            }
+        }
+    }
+    
+    if all_options.is_empty() {
+        return Err("No Minecraft installations with options.txt found".into());
+    }
+    
+    Ok(all_options)
+}
+
+#[tauri::command]
+async fn save_minecraft_options(options_path: String, gfx_options: HashMap<String, String>) -> Result<(), String> {
+    let path = PathBuf::from(&options_path);
+    
+    if !path.exists() {
+        return Err(format!("Options file not found: {}", options_path));
+    }
+    
+    // Read the current content
+    let content = tokio::fs::read_to_string(&path).await
+        .map_err(|e| format!("Failed to read options file: {}", e))?;
+    
+    let mut lines: Vec<String> = Vec::new();
+    let mut processed_keys = std::collections::HashSet::new();
+    
+    // Update existing lines
+    for line in content.lines() {
+        if let Some((key, _)) = line.split_once(':') {
+            if key.starts_with("gfx_") {
+                // Update with new value if we have it
+                if let Some(new_value) = gfx_options.get(key) {
+                    lines.push(format!("{}:{}", key, new_value));
+                    processed_keys.insert(key.to_string());
+                } else {
+                    // Keep the original line if not in our update map
+                    lines.push(line.to_string());
+                }
+            } else {
+                // Keep non-gfx options unchanged
+                lines.push(line.to_string());
+            }
+        } else {
+            // Keep lines that aren't key:value pairs
+            lines.push(line.to_string());
+        }
+    }
+    
+    // Add any new gfx_ options that weren't in the file
+    for (key, value) in &gfx_options {
+        if !processed_keys.contains(key) {
+            lines.push(format!("{}:{}", key, value));
+        }
+    }
+    
+    // Write back to file
+    let new_content = lines.join("\n");
+    tokio::fs::write(&path, new_content).await
+        .map_err(|e| format!("Failed to write options file: {}", e))?;
+    
+    Ok(())
 }
 
 #[tauri::command]
@@ -1505,6 +1648,8 @@ pub fn run() {
             register_brtx_protocol,
             is_brtx_protocol_registered,
             check_iobit_unlocker,
+            get_minecraft_options,
+            save_minecraft_options,
             set_iobit_path,
             get_iobit_path,
             open_iobit_file_dialog,
