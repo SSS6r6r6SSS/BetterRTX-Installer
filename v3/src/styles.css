@@ -1117,6 +1117,30 @@
     @apply text-minecraft-blue-200;
   }
 
+  .disclaimer {
+    @apply border-t border-t-app-border/75 mt-auto text-sm min-h-72 h-fit bg-black/25 border-x border-x-minecraft-slate-900;
+  }
+
+  .disclaimer__header {
+    @apply flex items-center justify-between px-2 h-12 border-t border-t-minecraft-slate-900/50 cursor-pointer z-10;
+  }
+
+  .disclaimer.disclaimer--collapsed {
+    @apply h-36 min-h-fit;
+  }
+
+  .disclaimer h2 {
+    @apply text-xs font-semibold uppercase tracking-wider text-app-muted select-none cursor-pointer;
+  }
+
+  .disclaimer p {
+    @apply text-xs h-full text-minecraft-slate-200 mt-2 pb-4 select-none cursor-default px-2 transition-[height] duration-150 ease-out will-change-[height];
+  }
+
+  .disclaimer.disclaimer--collapsed p {
+    @apply h-0;
+  }
+
   /* App Layout with Sidebar */
   .app-with-sidebar {
     @apply flex min-h-screen bg-app-bg text-app-fg;

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "classix";
 import { DownloadIcon, Package, Wrench, Palette } from "lucide-react";
+import Disclaimer from "../Disclaimer";
 
 interface SideNavProps {
   className?: string;
@@ -41,7 +42,7 @@ export const SideNav: React.FC<SideNavProps> = ({ className, children }) => {
   ];
 
   return (
-    <nav className={cx("sidebar-nav", className)}>
+    <div className={cx("sidebar-nav", className)}>
       <div className="sidebar-nav__header">
         <h2 className="sidebar-nav__title cursor-default">{t("currently_installed")}</h2>
       </div>
@@ -78,6 +79,8 @@ export const SideNav: React.FC<SideNavProps> = ({ className, children }) => {
           );
         })}
       </div>
-    </nav>
+
+      <Disclaimer />
+    </div>
   );
 };

@@ -65,8 +65,11 @@ const App: React.FC = () => {
 
   // Listen for rtpack file open events
   useEffect(() => {
-    const unlisten = listen<string>("rtpack-file-opened", (event) => {
-      setRtpackPath(event.payload);
+    const unlisten = listen("rtpack-file-opened", (event) => {
+      // In Tauri v2, the payload is accessed directly from the event
+      const filePath = typeof event.payload === 'string' ? event.payload : '';
+      console.log('RTpack file opened:', filePath);
+      setRtpackPath(filePath);
       setRtpackDialogOpen(true);
     });
 
@@ -82,8 +85,11 @@ const App: React.FC = () => {
 
   // Listen for deep link protocol events
   useEffect(() => {
-    const unlisten = listen<string>("deep-link-received", (event) => {
-      setDeepLinkUrl(event.payload);
+    const unlisten = listen("deep-link-received", (event) => {
+      // In Tauri v2, the payload is accessed directly from the event
+      const url = typeof event.payload === 'string' ? event.payload : '';
+      console.log('Deep link received:', url);
+      setDeepLinkUrl(url);
       setDeepLinkDialogOpen(true);
     });
 
@@ -128,11 +134,11 @@ const App: React.FC = () => {
       <AppHeader />
       <div className="app-with-sidebar">
         {/* Sidebar Navigation */}
-        <aside className="app-sidebar">
+        <nav className="app-sidebar">
           <SideNav>
             <InstallationNav />
           </SideNav>
-        </aside>
+        </nav>
 
         {/* Main Application Area */}
         <div className="app-main">

@@ -46,8 +46,8 @@ export default function IoBitPanel() {
         <section className="flex flex-col">
             <div className="section-toolbar mb-4">
                 <div className="toolbar-title flex flex-wrap gap-2 justify-between">
-                    <h2 className="text-lg font-semibold mr-4 sm:mr-auto flex-1">{t("iobit_installation")}</h2>
-                    <span className="text-sm opacity-75 flex-shrink-1">
+                    <h2 className="text-lg font-semibold mr-4 sm:mr-auto flex-1 select-none cursor-default">{t("iobit_installation")}</h2>
+                    <span className="text-sm opacity-75 flex-shrink-1 select-none cursor-default">
                         {t("iobit_installation_description")}
                     </span>
                 </div>

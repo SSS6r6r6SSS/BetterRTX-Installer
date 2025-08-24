@@ -154,5 +154,12 @@
   "log_force_refreshing_presets": "Fetching latest API data...",
   "refresh_installations": "Refresh Installations",
   "refresh_api": "Refresh API",
-  "clear_cache": "Clear Cache"
+  "clear_cache": "Clear Cache",
+  "installations_none_found_hint": "You can add sideloaded instances using the \"Find Installation\" button.",
+  "installation_name": "Installation Name",
+  "installation_name_placeholder": "Enter installation name",
+  "installation_path": "Installation Path",
+  "installation_path_placeholder": "Enter installation path",
+  "disclaimer": "Disclaimer",
+  "disclaimer_text": "BetterRTX is not affiliated with, approved, or endorsed by IObit, NVIDIA, Mojang, or Microsoft. The BetterRTX team is not responsible for any problems caused by its dependencies. Modding requires a certain level of technical knowledge and may cause issues with your game or system. Use at your own risk."
 }
