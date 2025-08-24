@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { cx } from "classix";
 
@@ -24,13 +24,13 @@ export const ConsolePanel: React.FC<ConsolePanelProps> = ({
     }
   }, [output]);
 
-  const handleToggle = () => {
+  const handleToggle = useCallback((): void => {
     onToggle(!isExpanded);
-  };
+  }, [isExpanded, onToggle]);
 
-  const handleClear = () => {
+  const handleClear = useCallback((): void => {
     onClear?.();
-  };
+  }, [onClear]);
 
   return (
     <div className="console-container">

@@ -94,39 +94,29 @@ const App: React.FC = () => {
 
   // Handle drag-n-drop indicator and file drops
   useEffect(() => {
-    const setupDragDropListener = async () => {
+    let unlisten: (() => void) | undefined;
+    (async () => {
       const webview = getCurrentWebview();
-      const unlisten = await webview.onDragDropEvent((event) => {
+      unlisten = await webview.onDragDropEvent((event) => {
         if (event.payload.type === 'enter') {
           setIsDragging(true);
         } else if (event.payload.type === 'drop') {
           setIsDragging(false);
-          // Handle the dropped files
           const paths = event.payload.paths || [];
           for (const path of paths) {
             if (path.toLowerCase().endsWith(".rtpack")) {
               setRtpackPath(path);
               setRtpackDialogOpen(true);
-              break; // Only handle the first .rtpack file
+              break;
             }
           }
         } else if (event.payload.type === 'leave') {
           setIsDragging(false);
         }
       });
-
-      return unlisten;
-    };
-
-    let unlisten: (() => void) | undefined;
-    setupDragDropListener().then((fn) => {
-      unlisten = fn;
-    });
-
+    })();
     return () => {
-      if (unlisten) {
-        unlisten();
-      }
+      unlisten?.();
     };
   }, []);
 

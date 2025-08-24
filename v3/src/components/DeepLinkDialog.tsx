@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Button from "./ui/Button";
 import { useAppStore } from "../store/appStore";
@@ -27,25 +27,26 @@ export const DeepLinkDialog: React.FC<DeepLinkDialogProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && deepLinkUrl) {
-      parseDeepLink();
-    }
-  }, [isOpen, deepLinkUrl]);
-
-  const parseDeepLink = async () => {
+  const parseDeepLink = useCallback(async (): Promise<void> => {
     try {
       setError(null);
+      const url = new URL(deepLinkUrl);
       const data = await invoke<ProtocolData>("handle_deep_link", {
-        url: deepLinkUrl,
+        url: url.toString(),
       });
       setProtocolData(data);
     } catch (err) {
-      setError(err as string);
+      setError(String(err));
     }
-  };
+  }, [deepLinkUrl]);
 
-  const handleInstall = async () => {
+  useEffect(() => {
+    if (isOpen && deepLinkUrl) {
+      void parseDeepLink();
+    }
+  }, [isOpen, deepLinkUrl, parseDeepLink]);
+
+  const handleInstall = useCallback(async (): Promise<void> => {
     if (!protocolData || selectedInstallations.size === 0) {
       addMessage({
         message: "Please select at least one installation",
@@ -53,13 +54,11 @@ export const DeepLinkDialog: React.FC<DeepLinkDialogProps> = ({
       });
       return;
     }
-
     setIsProcessing(true);
     try {
       const selectedNames = Array.from(selectedInstallations);
-
       if (protocolData.protocol_type === "preset") {
-        await invoke("download_preset_by_uuid", {
+        await invoke<void>("download_preset_by_uuid", {
           uuid: protocolData.id,
           selectedNames,
         });
@@ -68,7 +67,7 @@ export const DeepLinkDialog: React.FC<DeepLinkDialogProps> = ({
           type: "success",
         });
       } else if (protocolData.protocol_type === "creator") {
-        await invoke("download_creator_settings", {
+        await invoke<void>("download_creator_settings", {
           settingsHash: protocolData.id,
           selectedNames,
         });
@@ -80,14 +79,13 @@ export const DeepLinkDialog: React.FC<DeepLinkDialogProps> = ({
           type: "success",
         });
       }
-
       onClose();
     } catch (err) {
       addMessage({ message: `Installation failed: ${err}`, type: "error" });
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [addMessage, onClose, protocolData, selectedInstallations]);
 
   if (!isOpen) return null;
 

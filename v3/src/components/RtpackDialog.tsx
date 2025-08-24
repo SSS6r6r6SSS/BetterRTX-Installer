@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { cx } from "classix";
@@ -32,7 +32,7 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
     }
   }, [isOpen, installations.length, refreshInstallations]);
 
-  const handleInstallationToggle = (installLocation: string) => {
+  const handleInstallationToggle = useCallback((installLocation: string): void => {
     const newSet = new Set(selectedInstallations);
     if (newSet.has(installLocation)) {
       newSet.delete(installLocation);
@@ -40,9 +40,13 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
       newSet.add(installLocation);
     }
     setSelectedInstallations(newSet);
-  };
+  }, [selectedInstallations]);
 
-  const handleInstall = async () => {
+  const handleInstall = useCallback(async (): Promise<void> => {
+    if (!rtpackPath.toLowerCase().endsWith(".rtpack")) {
+      addMessage({ message: t("invalid_rtpack", "Invalid RTpack file"), type: "error" });
+      return;
+    }
     if (selectedInstallations.size === 0) {
       addMessage({
         message: t("status_select_installation_warning"),
@@ -50,16 +54,13 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
       });
       return;
     }
-
     setIsInstalling(true);
     try {
       addMessage({ message: t("status_installing_rtpack"), type: "loading" });
-
-      await invoke("install_from_rtpack", {
+      await invoke<void>("install_from_rtpack", {
         rtpackPath,
         selectedNames: Array.from(selectedInstallations),
       });
-
       addMessage({ message: t("status_install_success"), type: "success" });
       await refreshInstallations();
       onClose();
@@ -69,22 +70,20 @@ export const RtpackDialog: React.FC<RtpackDialogProps> = ({
     } finally {
       setIsInstalling(false);
     }
-  };
+  }, [addMessage, onClose, refreshInstallations, rtpackPath, selectedInstallations, t]);
 
-  const handleSelectAll = (): void => {
+  const handleSelectAll = useCallback((): void => {
     if (selectedInstallations.size === installations.length) {
       setSelectedInstallations(new Set());
     } else {
-      setSelectedInstallations(
-        new Set(installations.map((i) => i.InstallLocation))
-      );
+      setSelectedInstallations(new Set(installations.map((i) => i.InstallLocation)));
     }
-  };
+  }, [installations, selectedInstallations]);
 
-  const handleClose = (): void => {
+  const handleClose = useCallback((): void => {
     setSelectedInstallations(new Set());
     onClose();
-  };
+  }, [onClose]);
 
   const fileName = rtpackPath.split(/[\\\/]/).pop() || rtpackPath;
 
