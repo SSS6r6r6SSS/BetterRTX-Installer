@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { open } from "@tauri-apps/plugin-shell";
 import PresetIcon from "../presets/PresetIcon";
 import { useAppStore } from "../../store/appStore";
 import CreatorIcon from "../creator/CreatorIcon";
@@ -22,19 +24,20 @@ export default function InstallationNav() {
     .filter((preset): preset is NonNullable<typeof preset> => preset !== null);
   
   // Deduplicate by preset UUID, keeping the most recently installed one
-  const uniquePresetMap = new Map();
-  presetInstallations.forEach((preset) => {
-    if (!uniquePresetMap.has(preset.uuid) || 
-        new Date(preset.installed_at) > new Date(uniquePresetMap.get(preset.uuid).installed_at)) {
-      uniquePresetMap.set(preset.uuid, preset);
-    }
-  });
-  
-  const installedPresets = Array.from(uniquePresetMap.values());
+  const uniquePresets = useMemo(() => {
+    const uuids = new Set<string>();
+    return presetInstallations.filter(preset => {
+      if (uuids.has(preset.uuid)) {
+        return false;
+      }
+      uuids.add(preset.uuid);
+      return true;
+    });
+  }, [presetInstallations]);
 
   return (
     <div className="flex flex-col gap-4 divide-y divide-app-border/50 px-2 pt-4">
-      {installedPresets.map((preset) => (
+      {uniquePresets.map((preset) => (
         <button
           key={preset.uuid}
           className="flex flex-row items-center gap-2 cursor-pointer pb-4"
@@ -43,11 +46,11 @@ export default function InstallationNav() {
           })}
           onClick={() => {
             if (preset.installation.Preview) {
-              window.open(`minecraft-preview://`);
+              open(`minecraft-preview://`);
               return;
             }
 
-            window.open(`minecraft://`);
+            open(`minecraft://`);
           }}
           type="button"
         >
