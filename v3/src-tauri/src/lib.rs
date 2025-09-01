@@ -322,30 +322,8 @@ async fn copy_shader_files_async(app_handle: &tauri::AppHandle, install_location
     let mc_dest = Path::new(install_location).join("data").join("renderer").join("materials");
     let sideloaded = is_sideloaded(install_location);
 
-    // Prefer IObit Unlocker for both sideloaded and WindowsApps installs
-    if let Some(ioexe) = get_iobit_path_cached() {
-        println!("Using IObit Unlocker for delete+copy (sideloaded: {})", sideloaded);
-        match try_iobit_copy_async(app_handle, &ioexe, install_location, materials).await {
-            Ok(_) => {
-                let installed_preset = InstalledPreset {
-                    uuid: pack.uuid.clone(),
-                    name: pack.name.clone(),
-                    installed_at: chrono::Utc::now().to_rfc3339(),
-                    is_creator: None,
-                };
-                if let Err(e) = save_installed_preset(install_location, &installed_preset) {
-                    println!("⚠ Failed to save preset tracking: {}", e);
-                }
-                return Ok(());
-            }
-            Err(e) => {
-                println!("⚠ IObit Unlocker failed: {}", e);
-                // Continue to appropriate fallback below
-            }
-        }
-    } else {
-        println!("⚠ IObit Unlocker not found, using fallback method (sideloaded: {})", sideloaded);
-    }
+    // For WindowsApps installs, prefer IObit Unlocker; for sideloaded, use direct copy
+    // Only use IObit for WindowsApps (non-sideloaded) installations
 
     if sideloaded {
         // Fallback for sideloaded installations: ensure dir, delete then copy directly
@@ -371,7 +349,30 @@ async fn copy_shader_files_async(app_handle: &tauri::AppHandle, install_location
         return Ok(());
     }
 
-    // WindowsApps fallback: elevated PowerShell
+    if let Some(ioexe) = get_iobit_path_cached() {
+        println!("Using IObit Unlocker for WindowsApps delete+copy");
+        match try_iobit_copy_async(app_handle, &ioexe, install_location, materials).await {
+            Ok(_) => {
+                let installed_preset = InstalledPreset {
+                    uuid: pack.uuid.clone(),
+                    name: pack.name.clone(),
+                    installed_at: chrono::Utc::now().to_rfc3339(),
+                    is_creator: None,
+                };
+                if let Err(e) = save_installed_preset(install_location, &installed_preset) {
+                    println!("⚠ Failed to save preset tracking: {}", e);
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                println!("⚠ IObit Unlocker failed: {}", e);
+                // Continue to appropriate fallback below
+            }
+        }
+    } else {
+        println!("⚠ IObit Unlocker not found, using fallback method for WindowsApps");
+    }
+
     println!("Attempting elevated PowerShell fallback...");
     match try_elevated_copy_async(app_handle, &mc_dest, materials).await {
         Ok(_) => {
