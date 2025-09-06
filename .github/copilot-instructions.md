@@ -1,3 +1,5 @@
+## PowerShell
+
 - Prefer `[void]` over `| OutNull` to suppress GUI output in the host console.
 - Always wrap error-prone code in try/catch.
 - Do not use if/else when it is possible to use if/return instead.
