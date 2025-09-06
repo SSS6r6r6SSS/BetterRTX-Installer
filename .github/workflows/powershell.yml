@@ -12,8 +12,10 @@ name: PSScriptAnalyzer
 on:
   push:
     branches: [ "main" , "prerelease"]
+    paths: [ 'v3/**/*.{ps1,psm1}', 'v2/**', 'v1/**' ]
   pull_request:
     branches: [ "main" , "prerelease"]
+    paths: [ 'v3/**/*.{ps1,psm1}', 'v2/**', 'v1/**' ]
   schedule:
     - cron: '00 5 * * 5'
 
